@@ -80,15 +80,17 @@ class AppState extends ChangeNotifier {
       now: currentTime,
     );
 
-    final completed = _progress.completedLessonIds.contains(lessonId)
+    final alreadyCompleted = _progress.completedLessonIds.contains(lessonId);
+    final completed = alreadyCompleted
         ? _progress.completedLessonIds
         : [..._progress.completedLessonIds, lessonId];
+    final bonus = alreadyCompleted ? 0 : 30;
 
     _progress = _progress.copyWith(
       completedLessonIds: completed,
       streakDays: updatedStreak,
       lastActiveDay: currentTime,
-      xp: _progress.xp + 30,
+      xp: _progress.xp + bonus,
     );
 
     notifyListeners();
