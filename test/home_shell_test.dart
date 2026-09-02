@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:igboman/app.dart';
+import 'package:igboman/models/progress.dart';
 import 'package:igboman/state/app_state.dart';
 import 'package:igboman/widgets/avatar_view.dart';
 import 'package:igboman/widgets/streak_chip.dart';
 import 'package:igboman/widgets/xp_chip.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('Home Shell and App', () {
     testWidgets('pumps App, displays Igboman title, chips with 0 values and placeholder', (WidgetTester tester) async {
       await tester.pumpWidget(const App());
@@ -24,6 +30,20 @@ void main() {
       // Check body placeholder
       expect(find.text('Lessons are coming'), findsOneWidget);
       expect(find.byType(AvatarView), findsOneWidget);
+    });
+
+    testWidgets('pumps App with loaded initial progress displaying chips with persisted values', (WidgetTester tester) async {
+      const persistedProgress = ProgressData(
+        xp: 150,
+        streakDays: 4,
+        completedLessonIds: ['u1l1'],
+      );
+      final appState = AppState(initial: persistedProgress);
+
+      await tester.pumpWidget(App(appState: appState));
+
+      expect(find.text('150'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
     });
 
     testWidgets('updating AppState updates streak and xp chips in UI', (WidgetTester tester) async {

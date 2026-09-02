@@ -1,0 +1,100 @@
+import 'package:flutter/foundation.dart';
+
+@immutable
+class ProgressData {
+  final int schemaVersion;
+  final int xp;
+  final int streakDays;
+  final DateTime? lastActiveDay;
+  final List<String> completedLessonIds;
+
+  const ProgressData({
+    this.schemaVersion = 1,
+    this.xp = 0,
+    this.streakDays = 0,
+    this.lastActiveDay,
+    this.completedLessonIds = const [],
+  });
+
+  ProgressData copyWith({
+    int? schemaVersion,
+    int? xp,
+    int? streakDays,
+    DateTime? lastActiveDay,
+    List<String>? completedLessonIds,
+  }) {
+    return ProgressData(
+      schemaVersion: schemaVersion ?? this.schemaVersion,
+      xp: xp ?? this.xp,
+      streakDays: streakDays ?? this.streakDays,
+      lastActiveDay: lastActiveDay ?? this.lastActiveDay,
+      completedLessonIds: completedLessonIds ?? this.completedLessonIds,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'schemaVersion': schemaVersion,
+      'xp': xp,
+      'streakDays': streakDays,
+      'lastActiveDay': lastActiveDay?.toIso8601String(),
+      'completedLessonIds': completedLessonIds,
+    };
+  }
+
+  factory ProgressData.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return const ProgressData();
+    }
+
+    final schemaVersion = (json['schemaVersion'] as num?)?.toInt() ?? 1;
+    final xp = (json['xp'] as num?)?.toInt() ?? 0;
+    final streakDays = (json['streakDays'] as num?)?.toInt() ?? 0;
+
+    DateTime? lastActiveDay;
+    final rawLastActiveDay = json['lastActiveDay'];
+    if (rawLastActiveDay is String) {
+      try {
+        lastActiveDay = DateTime.parse(rawLastActiveDay);
+      } catch (_) {
+        lastActiveDay = null;
+      }
+    }
+
+    List<String> completedLessonIds = const [];
+    final rawCompleted = json['completedLessonIds'];
+    if (rawCompleted is List) {
+      completedLessonIds = rawCompleted
+          .whereType<String>()
+          .toList(growable: false);
+    }
+
+    return ProgressData(
+      schemaVersion: schemaVersion,
+      xp: xp,
+      streakDays: streakDays,
+      lastActiveDay: lastActiveDay,
+      completedLessonIds: completedLessonIds,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ProgressData &&
+        other.schemaVersion == schemaVersion &&
+        other.xp == xp &&
+        other.streakDays == streakDays &&
+        other.lastActiveDay == lastActiveDay &&
+        listEquals(other.completedLessonIds, completedLessonIds);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        schemaVersion,
+        xp,
+        streakDays,
+        lastActiveDay,
+        Object.hashAll(completedLessonIds),
+      );
+}

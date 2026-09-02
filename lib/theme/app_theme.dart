@@ -12,6 +12,14 @@ abstract final class AppColors {
   static const Color textPrimary = Color(0xFF2D241E);
   static const Color textSecondary = Color(0xFF6B5E55);
   static const Color cardBorder = Color(0xFFE8DFD5);
+
+  // Feedback and state tokens (v3 design system)
+  static const Color error = Color(0xFFC75B39); // flat terracotta for wrong answers
+  static const Color successBg = Color(0xFFEAF3EE); // light green tint
+  static const Color warnBg = Color(0xFFF6EDE3); // light brown tint
+  static const Color disabledFill = Color(0xFFE8DFD5);
+  static const Color disabledText = Color(0xFF9E9085);
+  static const Color buttonEdge = Color(0xFF006B42); // darker green, flat button edge
 }
 
 ThemeData buildAppTheme() {
