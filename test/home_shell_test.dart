@@ -14,7 +14,7 @@ void main() {
   });
 
   group('Home Shell and App', () {
-    testWidgets('pumps App, displays Igboman title, chips with 0 values and placeholder', (WidgetTester tester) async {
+    testWidgets('pumps App, displays Igboman title, chips with 0 values and unit map', (WidgetTester tester) async {
       await tester.pumpWidget(const App());
 
       // Check title
@@ -27,9 +27,9 @@ void main() {
       expect(find.text('🔥'), findsOneWidget);
       expect(find.text('⚡'), findsOneWidget);
 
-      // Check body placeholder
-      expect(find.text('Lessons are coming'), findsOneWidget);
-      expect(find.byType(AvatarView), findsOneWidget);
+      // Check the unit map replaces the old placeholder
+      expect(find.text('Lessons are coming'), findsNothing);
+      expect(find.text('Mkpụrụ Edemede'), findsOneWidget);
     });
 
     testWidgets('pumps App with loaded initial progress displaying chips with persisted values', (WidgetTester tester) async {
@@ -42,8 +42,14 @@ void main() {
 
       await tester.pumpWidget(App(appState: appState));
 
-      expect(find.text('150'), findsOneWidget);
-      expect(find.text('4'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(StreakChip), matching: find.text('4')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(XpChip), matching: find.text('150')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('updating AppState updates streak and xp chips in UI', (WidgetTester tester) async {
@@ -56,8 +62,14 @@ void main() {
       appState.xp = 120;
       await tester.pump();
 
-      expect(find.text('5'), findsOneWidget);
-      expect(find.text('120'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(StreakChip), matching: find.text('5')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(XpChip), matching: find.text('120')),
+        findsOneWidget,
+      );
     });
   });
 
