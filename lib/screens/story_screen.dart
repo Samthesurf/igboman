@@ -5,12 +5,14 @@ import '../data/curriculum.dart';
 import '../data/stories.dart';
 import '../models/lesson.dart';
 import '../models/story.dart';
+import '../services/gemini_tutor_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
 import '../widgets/content_box.dart';
 import '../widgets/flat_button.dart';
 import '../widgets/tappable_text.dart';
+import 'chat_screen.dart';
 
 /// Story reader with three phases: new words, reading with tappable glosses,
 /// and comprehension questions. First completion awards 40 XP once.
@@ -139,47 +141,40 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   void _showTalkSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.card)),
+    final GeminiTutorService tutor;
+    try {
+      tutor = GeminiTutorService();
+    } catch (_) {
+      _showKeyMissingMessage();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            ChatScreen(tutor: tutor, storyContext: widget.story.titleEn),
       ),
-      builder: (context) {
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.all(Spacing.md),
-          padding: const EdgeInsets.all(Spacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.successBg,
-            borderRadius: BorderRadius.circular(Radii.card),
+    );
+  }
+
+  void _showKeyMissingMessage() {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        elevation: 0,
+        backgroundColor: AppColors.successBg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.button),
+        ),
+        content: const Text(
+          'Add a Gemini API key (GEMINI_API_KEY) to chat with Ada',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontFamily: 'NotoSans',
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Story talk',
-                style: TextStyle(
-                  fontSize: TypeScale.title,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  fontFamily: 'NotoSans',
-                ),
-              ),
-              const SizedBox(height: Spacing.s),
-              const Text(
-                'Story talk comes with the chat update',
-                style: TextStyle(
-                  fontSize: TypeScale.body,
-                  color: AppColors.textSecondary,
-                  fontFamily: 'NotoSans',
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 

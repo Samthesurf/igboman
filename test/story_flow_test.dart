@@ -7,6 +7,7 @@ import 'package:igboman/models/lesson.dart';
 import 'package:igboman/models/progress.dart';
 import 'package:igboman/models/story.dart';
 import 'package:igboman/models/unit.dart';
+import 'package:igboman/screens/chat_screen.dart';
 import 'package:igboman/screens/story_screen.dart';
 import 'package:igboman/state/app_state.dart';
 
@@ -19,13 +20,8 @@ const _fakeStory = Story(
   unitId: 3,
   titleEn: 'Tiny Tale',
   titleIgbo: 'Akụkọ Nta',
-  sentences: [
-    'Ada hụ mmiri',
-    'Mbe rie nri',
-  ],
-  newWords: [
-    VocabEntry(igbo: 'mmiri', en: 'water'),
-  ],
+  sentences: ['Ada hụ mmiri', 'Mbe rie nri'],
+  newWords: [VocabEntry(igbo: 'mmiri', en: 'water')],
   questions: [
     LessonQuestion(
       id: 'story_testq1',
@@ -61,9 +57,7 @@ class _Launcher extends StatelessWidget {
       body: Center(
         child: TextButton(
           onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => StoryScreen(story: story),
-            ),
+            MaterialPageRoute<void>(builder: (_) => StoryScreen(story: story)),
           ),
           child: const Text('open story'),
         ),
@@ -119,8 +113,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('story flow: chips, reading, glosses, questions, completion',
-      (tester) async {
+  testWidgets('story flow: chips, reading, glosses, questions, completion', (
+    tester,
+  ) async {
     final appState = _freshState();
     await tester.pumpWidget(_wrap(appState));
     await _openStory(tester);
@@ -187,7 +182,9 @@ void main() {
     expect(appState.completedStoryIds, ['story_test']);
   });
 
-  testWidgets('wrong answer reveals correct option in terracotta', (tester) async {
+  testWidgets('wrong answer reveals correct option in terracotta', (
+    tester,
+  ) async {
     final appState = _freshState();
     await tester.pumpWidget(_wrap(appState));
     await _openStory(tester);
@@ -226,20 +223,36 @@ void main() {
     expect(appState.completedStoryIds, ['story_test']);
   });
 
-  testWidgets('talk sheet shows chat-update note and Back pops', (tester) async {
+  testWidgets('Talk about it opens the story chat and Back pops', (
+    tester,
+  ) async {
     final appState = _freshState();
     await tester.pumpWidget(_wrap(appState));
     await _openStory(tester);
     await _runThroughStory(tester);
 
-    // Talk about it opens the flat info sheet
+    // Talk about it opens the story chat, or asks for an API key when none
+    // is configured in the test environment.
     await tester.tap(find.text('Talk about it'));
     await tester.pumpAndSettle();
-    expect(find.text('Story talk comes with the chat update'), findsOneWidget);
 
-    // Dismiss the sheet
-    await tester.tapAt(const Offset(5, 5));
-    await tester.pumpAndSettle();
+    final chatOpen = find.byType(ChatScreen).evaluate().isNotEmpty;
+    final keyPrompt = find.textContaining('API key').evaluate().isNotEmpty;
+    expect(
+      chatOpen || keyPrompt,
+      isTrue,
+      reason: 'expected story chat or API-key prompt',
+    );
+
+    if (chatOpen) {
+      // Chat screen back arrow returns to the story completion screen.
+      await tester.tap(find.byKey(const Key('chatBackButton')));
+      await tester.pumpAndSettle();
+    } else {
+      // Let the floating snackbar expire.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    }
 
     // Back pops the story screen
     await tester.tap(find.text('Back'));

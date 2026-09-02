@@ -3,14 +3,18 @@ import 'package:provider/provider.dart';
 
 import '../data/curriculum.dart';
 import '../models/unit.dart';
+import '../services/gemini_tutor_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
 import '../widgets/avatar_view.dart';
 import '../widgets/content_box.dart';
+import '../widgets/flat_button.dart';
 import '../widgets/streak_chip.dart';
 import '../widgets/xp_chip.dart';
+import 'chat_screen.dart';
 import 'lesson_screen.dart';
+import 'stories_screen.dart';
 
 const double _desktopBreakpoint = 800;
 const double _sideRailWidth = 176;
@@ -39,9 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       orElse: () => unit.lessons.first,
     );
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => LessonScreen(lesson: nextLesson),
-      ),
+      MaterialPageRoute<void>(builder: (_) => LessonScreen(lesson: nextLesson)),
     );
   }
 
@@ -112,14 +114,16 @@ class _HomeScreenState extends State<HomeScreen> {
         pathItems.add(const _UnitConnector());
       }
       final unit = units[i];
-      pathItems.add(_UnitCard(
-        unit: unit,
-        isCurrent: unit.id == currentUnitId,
-        locked: !appState.unitIsUnlocked(unit.id),
-        completed: appState.unitFullyCompleted(unit.id),
-        progressFraction: _progressFraction(appState, unit),
-        onTap: () => _onUnitTap(unit, appState),
-      ));
+      pathItems.add(
+        _UnitCard(
+          unit: unit,
+          isCurrent: unit.id == currentUnitId,
+          locked: !appState.unitIsUnlocked(unit.id),
+          completed: appState.unitFullyCompleted(unit.id),
+          progressFraction: _progressFraction(appState, unit),
+          onTap: () => _onUnitTap(unit, appState),
+        ),
+      );
     }
 
     return ContentBox(
@@ -144,11 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStoriesTab() {
-    return ContentBox(
-      child: Center(
-        child: _StoriesCard(),
-      ),
-    );
+    return const StoriesList();
   }
 
   Widget _buildChatTab() {
@@ -156,14 +156,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            AvatarView(
+          children: [
+            const AvatarView(
               assetPath: 'assets/images/ada.png',
               size: AvatarSizes.hero,
             ),
-            SizedBox(height: Spacing.md),
-            Text(
-              'Chat arrives soon',
+            const SizedBox(height: Spacing.md),
+            const Text(
+              'Talk with Ada',
               style: TextStyle(
                 fontSize: TypeScale.title,
                 fontWeight: FontWeight.bold,
@@ -171,7 +171,62 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontFamily: 'NotoSans',
               ),
             ),
+            const SizedBox(height: Spacing.xs),
+            const Text(
+              'Practise with the Igbo tutor, one chat at a time.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: TypeScale.bodySmall,
+                color: AppColors.textSecondary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+            const SizedBox(height: Spacing.lg),
+            FlatButton(
+              key: const Key('chatStartButton'),
+              label: 'Start chatting',
+              enabled: true,
+              color: AppColors.secondary,
+              onTap: () => _openChat(context),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Opens the avatar chat, resolving the API key lazily. Without a key the
+  /// tutor cannot start, so a snackbar explains how to configure one.
+  void _openChat(BuildContext context) {
+    final GeminiTutorService tutor;
+    try {
+      tutor = GeminiTutorService();
+    } catch (_) {
+      _showKeyMissingMessage(context);
+      return;
+    }
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => ChatScreen(tutor: tutor)));
+  }
+
+  void _showKeyMissingMessage(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        elevation: 0,
+        backgroundColor: AppColors.successBg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.button),
+        ),
+        content: const Text(
+          'Add a Gemini API key (GEMINI_API_KEY) to chat with Ada',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontFamily: 'NotoSans',
+          ),
         ),
       ),
     );
@@ -526,7 +581,11 @@ class _UnitBadge extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: completed
-          ? const Icon(Icons.check, size: IconSizes.m, color: AppColors.onSecondary)
+          ? const Icon(
+              Icons.check,
+              size: IconSizes.m,
+              color: AppColors.onSecondary,
+            )
           : Text(
               '$number',
               style: TextStyle(
@@ -574,7 +633,8 @@ class _StoriesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       key: const Key('storiesCard'),
-      onTap: () => _showStoriesSheet(context),
+      onTap: () => Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => const StoriesScreen())),
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: double.infinity,
@@ -601,41 +661,4 @@ class _StoriesCard extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showStoriesSheet(BuildContext context) {
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: AppColors.successBg,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.hero)),
-    ),
-    builder: (context) => const Padding(
-      padding: EdgeInsets.all(Spacing.lg),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Stories arrive soon',
-            style: TextStyle(
-              fontSize: TypeScale.title,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-          SizedBox(height: Spacing.s),
-          Text(
-            'Short Igbo stories are on the way.',
-            style: TextStyle(
-              fontSize: TypeScale.bodySmall,
-              color: AppColors.textSecondary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }

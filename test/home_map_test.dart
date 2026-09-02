@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:igboman/models/progress.dart';
 import 'package:igboman/screens/home_screen.dart';
 import 'package:igboman/screens/lesson_screen.dart';
+import 'package:igboman/screens/stories_screen.dart';
 import 'package:igboman/state/app_state.dart';
+import 'package:igboman/widgets/story_card.dart';
 
 Widget _wrap(AppState appState) {
   return ChangeNotifierProvider<AppState>.value(
@@ -30,8 +32,9 @@ void main() {
   });
 
   group('Unit map home screen', () {
-    testWidgets('locked units show a lock and taps do not navigate',
-        (tester) async {
+    testWidgets('locked units show a lock and taps do not navigate', (
+      tester,
+    ) async {
       _useTallSurface(tester);
       await tester.pumpWidget(_wrap(_freshState()));
       await tester.pump();
@@ -50,8 +53,9 @@ void main() {
       expect(find.byType(LessonScreen), findsNothing);
     });
 
-    testWidgets('tapping an unlocked unit opens its next lesson',
-        (tester) async {
+    testWidgets('tapping an unlocked unit opens its next lesson', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(_freshState()));
       await tester.pump();
 
@@ -78,13 +82,12 @@ void main() {
       expect(find.byIcon(Icons.lock), findsNWidgets(7));
     });
 
-    testWidgets('progress bar reflects the completed lesson fraction',
-        (tester) async {
+    testWidgets('progress bar reflects the completed lesson fraction', (
+      tester,
+    ) async {
       _useTallSurface(tester);
       final appState = AppState(
-        initial: const ProgressData(
-          completedLessonIds: ['u1l1', 'u1l2'],
-        ),
+        initial: const ProgressData(completedLessonIds: ['u1l1', 'u1l2']),
       );
       await tester.pumpWidget(_wrap(appState));
       await tester.pump();
@@ -103,8 +106,7 @@ void main() {
       expect(fractions.where((f) => f == 0.0).length, 8);
     });
 
-    testWidgets('bottom navigation bar shows on mobile widths',
-        (tester) async {
+    testWidgets('bottom navigation bar shows on mobile widths', (tester) async {
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -122,7 +124,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Chat arrives soon'), findsOneWidget);
+      expect(find.byKey(const Key('chatStartButton')), findsOneWidget);
     });
 
     testWidgets('side rail shows on desktop widths', (tester) async {
@@ -137,7 +139,7 @@ void main() {
       expect(find.byType(NavigationBar), findsNothing);
     });
 
-    testWidgets('Stories card opens the info sheet', (tester) async {
+    testWidgets('Stories card opens the stories screen', (tester) async {
       _useTallSurface(tester);
       await tester.pumpWidget(_wrap(_freshState()));
       await tester.pump();
@@ -145,7 +147,8 @@ void main() {
       await tester.tap(find.byKey(const Key('storiesCard')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Stories arrive soon'), findsOneWidget);
+      expect(find.byType(StoriesScreen), findsOneWidget);
+      expect(find.byType(StoryCard), findsWidgets);
     });
   });
 }
