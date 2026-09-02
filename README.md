@@ -32,17 +32,16 @@ flutter build apk --release --dart-define-from-file=.env
 Linux:
 
 ```bash
-export GEMINI_API_KEY=your_key
-flutter run -d linux
+flutter run -d linux --dart-define-from-file=.env
 # or a release build:
-flutter build linux --release
+flutter build linux --release --dart-define-from-file=.env
 # bundle: build/linux/x64/release/bundle/igboman
 ```
 
 Android:
 
 ```bash
-flutter build apk --release --dart-define=GEMINI_API_KEY=your_key
+flutter build apk --release --dart-define-from-file=.env
 ```
 
 A quick live check of the tutor service (uses the env key, prints only the tutor reply):
