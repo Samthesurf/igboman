@@ -22,6 +22,13 @@ Learn Igbo from zero, Duolingo style. Lessons climb from the 36-letter alphabet 
 
 The Gemini API key is never in the source. Resolution order: `--dart-define=GEMINI_API_KEY=...`, then `GEMINI_API_KEY`, then `GOOGLE_GENAI_API_KEY` environment variables.
 
+Convenient way: keep the key in a `.env` file at the repo root (copy `.env.example` to `.env` and fill it in); `.env` is gitignored.
+
+```bash
+flutter run -d linux --dart-define-from-file=.env
+flutter build apk --release --dart-define-from-file=.env
+```
+
 Linux:
 
 ```bash
