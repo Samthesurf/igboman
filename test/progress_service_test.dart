@@ -14,6 +14,7 @@ void main() {
       expect(progress.streakDays, 0);
       expect(progress.lastActiveDay, isNull);
       expect(progress.completedLessonIds, isEmpty);
+      expect(progress.completedStoryIds, isEmpty);
     });
 
     test('toJson and fromJson round trip successfully', () {
@@ -24,6 +25,7 @@ void main() {
         streakDays: 4,
         lastActiveDay: now,
         completedLessonIds: const ['u1l1', 'u1l2'],
+        completedStoryIds: const ['story_03', 'story_04'],
       );
 
       final json = progress.toJson();
@@ -34,6 +36,7 @@ void main() {
       expect(reconstructed.streakDays, 4);
       expect(reconstructed.lastActiveDay, now);
       expect(reconstructed.completedLessonIds, ['u1l1', 'u1l2']);
+      expect(reconstructed.completedStoryIds, ['story_03', 'story_04']);
       expect(reconstructed, progress);
     });
 
@@ -46,6 +49,7 @@ void main() {
       expect(missing.streakDays, 0);
       expect(missing.lastActiveDay, isNull);
       expect(missing.completedLessonIds, isEmpty);
+      expect(missing.completedStoryIds, isEmpty);
 
       final corrupted = ProgressData.fromJson(const {
         'schemaVersion': 'invalid',
@@ -53,6 +57,7 @@ void main() {
         'streakDays': null,
         'lastActiveDay': 'not-a-date',
         'completedLessonIds': 12345,
+        'completedStoryIds': 67890,
         'extraUnknownField': 'should be ignored',
       });
       expect(corrupted.schemaVersion, 1);
@@ -60,6 +65,23 @@ void main() {
       expect(corrupted.streakDays, 0);
       expect(corrupted.lastActiveDay, isNull);
       expect(corrupted.completedLessonIds, isEmpty);
+      expect(corrupted.completedStoryIds, isEmpty);
+    });
+
+    test('old JSON without completedStoryIds loads with an empty story list',
+        () {
+      // A pre-story-mode save file has no completedStoryIds field; it must
+      // load tolerantly as an empty list and keep schemaVersion 1.
+      final legacy = ProgressData.fromJson(const {
+        'schemaVersion': 1,
+        'xp': 90,
+        'streakDays': 2,
+        'completedLessonIds': ['u1l1'],
+      });
+      expect(legacy.schemaVersion, 1);
+      expect(legacy.xp, 90);
+      expect(legacy.completedLessonIds, ['u1l1']);
+      expect(legacy.completedStoryIds, isEmpty);
     });
 
     test('copyWith creates modified copy', () {
@@ -159,6 +181,7 @@ void main() {
         streakDays: 3,
         lastActiveDay: now,
         completedLessonIds: const ['u1l1', 'u1l2', 'u1l3'],
+        completedStoryIds: const ['story_03'],
       );
 
       await service.save(data);
@@ -172,6 +195,7 @@ void main() {
       expect(loaded.streakDays, 3);
       expect(loaded.lastActiveDay, now);
       expect(loaded.completedLessonIds, ['u1l1', 'u1l2', 'u1l3']);
+      expect(loaded.completedStoryIds, ['story_03']);
     });
 
     test('corrupted JSON returns defaults and is overwritten on next save', () async {

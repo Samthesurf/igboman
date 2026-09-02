@@ -41,6 +41,13 @@ class AppState extends ChangeNotifier {
     return _progress.completedLessonIds.contains(lessonId);
   }
 
+  List<String> get completedStoryIds => _progress.completedStoryIds;
+
+  /// Returns true if the story with [storyId] has been completed.
+  bool isStoryCompleted(String storyId) {
+    return _progress.completedStoryIds.contains(storyId);
+  }
+
   /// Unit 1 is always unlocked.
   /// Unit N is unlocked when every lesson of unit N-1 is completed.
   bool unitIsUnlocked(int unitId) {
@@ -91,6 +98,31 @@ class AppState extends ChangeNotifier {
       streakDays: updatedStreak,
       lastActiveDay: currentTime,
       xp: _progress.xp + bonus,
+    );
+
+    notifyListeners();
+    await _service.save(_progress);
+  }
+
+  /// Marks the story as completed, applies the same streak rule as lessons,
+  /// and awards no XP (story XP is granted separately by the caller).
+  Future<void> completeStory(String storyId, [DateTime? now]) async {
+    final currentTime = now ?? DateTime.now();
+    final updatedStreak = calculateStreak(
+      currentStreak: _progress.streakDays,
+      lastActiveDay: _progress.lastActiveDay,
+      now: currentTime,
+    );
+
+    final alreadyCompleted = _progress.completedStoryIds.contains(storyId);
+    final completed = alreadyCompleted
+        ? _progress.completedStoryIds
+        : [..._progress.completedStoryIds, storyId];
+
+    _progress = _progress.copyWith(
+      completedStoryIds: completed,
+      streakDays: updatedStreak,
+      lastActiveDay: currentTime,
     );
 
     notifyListeners();

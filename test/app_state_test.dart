@@ -115,6 +115,57 @@ void main() {
     });
   });
 
+  group('AppState Story Completion', () {
+    test('completeStory marks the story done, bumps streak, awards no XP',
+        () async {
+      final day1 = DateTime.utc(2026, 9, 1, 10, 0);
+      final state = AppState();
+      var notifyCount = 0;
+      state.addListener(() => notifyCount++);
+
+      await state.completeStory('story_03', day1);
+
+      expect(state.isStoryCompleted('story_03'), isTrue);
+      expect(state.completedStoryIds, ['story_03']);
+      expect(state.streakDays, 1);
+      expect(state.xp, 0, reason: 'story completion itself awards no XP');
+      expect(notifyCount, 1);
+
+      final loaded = await const ProgressService().load();
+      expect(loaded.completedStoryIds, ['story_03']);
+    });
+
+    test('completeStory follows the lesson streak rule and is idempotent',
+        () async {
+      final day1 = DateTime.utc(2026, 9, 1, 10, 0);
+      final day1Later = DateTime.utc(2026, 9, 1, 18, 0);
+      final day2 = DateTime.utc(2026, 9, 2, 9, 0);
+      final state = AppState();
+
+      await state.completeStory('story_03', day1);
+      expect(state.streakDays, 1);
+
+      // same-day second story leaves streak unchanged
+      await state.completeStory('story_04', day1Later);
+      expect(state.streakDays, 1);
+
+      // next day increments streak
+      await state.completeStory('story_05', day2);
+      expect(state.streakDays, 2);
+
+      // replaying does not duplicate the id
+      await state.completeStory('story_05', day2);
+      expect(state.completedStoryIds, ['story_03', 'story_04', 'story_05']);
+      expect(state.streakDays, 2);
+    });
+
+    test('isStoryCompleted is false for unknown stories', () {
+      final state = AppState();
+      expect(state.isStoryCompleted('story_03'), isFalse);
+      expect(state.completedStoryIds, isEmpty);
+    });
+  });
+
   group('AppState XP and Notifications', () {
     test('awardXp increments xp, notifies listeners, and persists', () async {
       final state = AppState();

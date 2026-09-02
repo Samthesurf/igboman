@@ -7,6 +7,7 @@ class ProgressData {
   final int streakDays;
   final DateTime? lastActiveDay;
   final List<String> completedLessonIds;
+  final List<String> completedStoryIds;
 
   const ProgressData({
     this.schemaVersion = 1,
@@ -14,6 +15,7 @@ class ProgressData {
     this.streakDays = 0,
     this.lastActiveDay,
     this.completedLessonIds = const [],
+    this.completedStoryIds = const [],
   });
 
   ProgressData copyWith({
@@ -22,6 +24,7 @@ class ProgressData {
     int? streakDays,
     DateTime? lastActiveDay,
     List<String>? completedLessonIds,
+    List<String>? completedStoryIds,
   }) {
     return ProgressData(
       schemaVersion: schemaVersion ?? this.schemaVersion,
@@ -29,6 +32,7 @@ class ProgressData {
       streakDays: streakDays ?? this.streakDays,
       lastActiveDay: lastActiveDay ?? this.lastActiveDay,
       completedLessonIds: completedLessonIds ?? this.completedLessonIds,
+      completedStoryIds: completedStoryIds ?? this.completedStoryIds,
     );
   }
 
@@ -39,6 +43,7 @@ class ProgressData {
       'streakDays': streakDays,
       'lastActiveDay': lastActiveDay?.toIso8601String(),
       'completedLessonIds': completedLessonIds,
+      'completedStoryIds': completedStoryIds,
     };
   }
 
@@ -89,12 +94,23 @@ class ProgressData {
           .toList(growable: false);
     }
 
+    // Tolerant read: older save files predate stories, so a missing or
+    // malformed field defaults to an empty list. Schema version stays 1.
+    List<String> completedStoryIds = const [];
+    final rawStories = json['completedStoryIds'];
+    if (rawStories is List) {
+      completedStoryIds = rawStories
+          .whereType<String>()
+          .toList(growable: false);
+    }
+
     return ProgressData(
       schemaVersion: schemaVersion,
       xp: xp,
       streakDays: streakDays,
       lastActiveDay: lastActiveDay,
       completedLessonIds: completedLessonIds,
+      completedStoryIds: completedStoryIds,
     );
   }
 
@@ -106,7 +122,8 @@ class ProgressData {
         other.xp == xp &&
         other.streakDays == streakDays &&
         other.lastActiveDay == lastActiveDay &&
-        listEquals(other.completedLessonIds, completedLessonIds);
+        listEquals(other.completedLessonIds, completedLessonIds) &&
+        listEquals(other.completedStoryIds, completedStoryIds);
   }
 
   @override
@@ -116,5 +133,6 @@ class ProgressData {
         streakDays,
         lastActiveDay,
         Object.hashAll(completedLessonIds),
+        Object.hashAll(completedStoryIds),
       );
 }
