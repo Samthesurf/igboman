@@ -21,7 +21,7 @@ AppState _freshState() => AppState(initial: const ProgressData());
 
 /// Tall surface so every unit card and the Stories card are laid out.
 void _useTallSurface(WidgetTester tester) {
-  tester.view.physicalSize = const Size(800, 1400);
+  tester.view.physicalSize = const Size(800, 2600);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
 }
@@ -39,9 +39,9 @@ void main() {
       await tester.pumpWidget(_wrap(_freshState()));
       await tester.pump();
 
-      // Unit 1 is unlocked, units 2 through 9 are locked.
+      // Unit 1 is unlocked, units 2 through 13 are locked.
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
-      expect(find.byIcon(Icons.lock), findsNWidgets(8));
+      expect(find.byIcon(Icons.lock), findsNWidgets(12));
       expect(find.byType(LessonScreen), findsNothing);
 
       // Tap the locked unit 2 card.
@@ -79,7 +79,7 @@ void main() {
       // Unit 1 fully completed: check badge. Unit 2 now unlocked.
       expect(find.byIcon(Icons.check), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsNWidgets(2));
-      expect(find.byIcon(Icons.lock), findsNWidgets(7));
+      expect(find.byIcon(Icons.lock), findsNWidgets(11));
       expect(find.byIcon(Icons.quiz_outlined), findsOneWidget);
 
       // The quiz tile opens the harder unit assessment.
@@ -115,7 +115,7 @@ void main() {
       // Unit 1: 2 of 5 lessons complete.
       expect(fractions, contains(closeTo(0.4, 0.001)));
       // All other units have no progress.
-      expect(fractions.where((f) => f == 0.0).length, 8);
+      expect(fractions.where((f) => f == 0.0).length, 12);
     });
 
     testWidgets('bottom navigation bar shows on mobile widths', (tester) async {

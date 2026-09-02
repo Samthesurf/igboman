@@ -8,6 +8,10 @@ import 'units/unit_06.dart';
 import 'units/unit_07.dart';
 import 'units/unit_08.dart';
 import 'units/unit_09.dart';
+import 'units/unit_10.dart';
+import 'units/unit_11.dart';
+import 'units/unit_12.dart';
+import 'units/unit_13.dart';
 
 export 'units/unit_01.dart';
 export 'units/unit_02.dart';
@@ -18,6 +22,10 @@ export 'units/unit_06.dart';
 export 'units/unit_07.dart';
 export 'units/unit_08.dart';
 export 'units/unit_09.dart';
+export 'units/unit_10.dart';
+export 'units/unit_11.dart';
+export 'units/unit_12.dart';
+export 'units/unit_13.dart';
 
 const List<Unit> curriculum = [
   unit01,
@@ -29,6 +37,10 @@ const List<Unit> curriculum = [
   unit07,
   unit08,
   unit09,
+  unit10,
+  unit11,
+  unit12,
+  unit13,
 ];
 
 Unit unitById(int id) {
