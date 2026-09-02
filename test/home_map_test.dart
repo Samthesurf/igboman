@@ -80,6 +80,18 @@ void main() {
       expect(find.byIcon(Icons.check), findsOneWidget);
       expect(find.byIcon(Icons.play_arrow), findsNWidgets(2));
       expect(find.byIcon(Icons.lock), findsNWidgets(7));
+      expect(find.byIcon(Icons.quiz_outlined), findsOneWidget);
+
+      // The quiz tile opens the harder unit assessment.
+      await tester.tap(find.byKey(const Key('unitQuizButton_1')));
+      await tester.pumpAndSettle();
+      expect(find.byType(LessonScreen), findsOneWidget);
+      expect(find.text('Unit 1 Quiz'), findsOneWidget);
+      expect(
+        find.byKey(const Key('lessonStartButton')),
+        findsNothing,
+        reason: 'assessments skip the teach phase',
+      );
     });
 
     testWidgets('progress bar reflects the completed lesson fraction', (

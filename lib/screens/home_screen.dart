@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../data/curriculum.dart';
 import '../models/unit.dart';
 import '../services/gemini_tutor_service.dart';
+import '../services/unit_quiz.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
@@ -44,6 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => LessonScreen(lesson: nextLesson)),
+    );
+  }
+
+  void _openUnitQuiz(Unit unit) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LessonScreen(lesson: buildUnitQuiz(unit)),
+      ),
     );
   }
 
@@ -122,6 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
           completed: appState.unitFullyCompleted(unit.id),
           progressFraction: _progressFraction(appState, unit),
           onTap: () => _onUnitTap(unit, appState),
+          onQuizTap: appState.unitFullyCompleted(unit.id)
+              ? () => _openUnitQuiz(unit)
+              : null,
         ),
       );
     }
@@ -445,6 +457,7 @@ class _UnitCard extends StatelessWidget {
     required this.completed,
     required this.progressFraction,
     required this.onTap,
+    this.onQuizTap,
   });
 
   final Unit unit;
@@ -453,6 +466,9 @@ class _UnitCard extends StatelessWidget {
   final bool completed;
   final double progressFraction;
   final VoidCallback onTap;
+
+  /// Fires when the completed unit's quiz tile is tapped.
+  final VoidCallback? onQuizTap;
 
   @override
   Widget build(BuildContext context) {
@@ -530,22 +546,52 @@ class _UnitCard extends StatelessWidget {
                         ),
                       )
                     else
-                      GestureDetector(
-                        onTap: onTap,
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: ControlSizes.minTouchTarget,
-                          height: ControlSizes.minTouchTarget,
-                          decoration: BoxDecoration(
-                            color: AppColors.successBg,
-                            borderRadius: BorderRadius.circular(Radii.button),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: onTap,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              width: ControlSizes.minTouchTarget,
+                              height: ControlSizes.minTouchTarget,
+                              decoration: BoxDecoration(
+                                color: AppColors.successBg,
+                                borderRadius: BorderRadius.circular(
+                                  Radii.button,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.play_arrow,
+                                size: IconSizes.md,
+                                color: AppColors.secondary,
+                              ),
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.play_arrow,
-                            size: IconSizes.md,
-                            color: AppColors.secondary,
-                          ),
-                        ),
+                          if (completed && onQuizTap != null) ...[
+                            const SizedBox(width: Spacing.s),
+                            GestureDetector(
+                              key: Key('unitQuizButton_${unit.id}'),
+                              onTap: onQuizTap,
+                              behavior: HitTestBehavior.opaque,
+                              child: Container(
+                                width: ControlSizes.minTouchTarget,
+                                height: ControlSizes.minTouchTarget,
+                                decoration: BoxDecoration(
+                                  color: AppColors.warnBg,
+                                  borderRadius: BorderRadius.circular(
+                                    Radii.button,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.quiz_outlined,
+                                  size: IconSizes.md,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                   ],
                 ),

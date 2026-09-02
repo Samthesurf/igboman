@@ -10,10 +10,7 @@ class MatchPair {
   final String left;
   final String right;
 
-  const MatchPair({
-    required this.left,
-    required this.right,
-  });
+  const MatchPair({required this.left, required this.right});
 }
 
 class LessonQuestion {
@@ -45,9 +42,14 @@ class Lesson {
   final String title;
   final List<LessonQuestion> questions;
 
+  /// When true the lesson is an assessment (e.g. a unit quiz) and starts
+  /// directly on the questions, skipping the teach phase.
+  final bool skipIntro;
+
   const Lesson({
     required this.id,
     required this.title,
     required this.questions,
+    this.skipIntro = false,
   });
 }

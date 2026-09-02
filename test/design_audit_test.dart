@@ -90,7 +90,7 @@ const _allowlist = <String, String>{
   // The 2px unit-path connector line is centered under the 32px unit badge:
   // 16 (badge left inset) + 32 / 2 (badge center) minus 1 (half the 2px line)
   // lands on 31, which intentionally overrides the 4px grid.
-  'lib/screens/home_screen.dart:425': 'unit-path connector centering offset',
+  'lib/screens/home_screen.dart:437': 'unit-path connector centering offset',
 };
 
 /// Recursively folds a const layout expression to a double. Literals and

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../models/lesson.dart';
 import '../services/answer_checker.dart';
+import '../services/audio_service.dart';
+import '../services/lesson_intro.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
@@ -28,6 +30,26 @@ class _LessonScreenState extends State<LessonScreen> {
   int _questionIndex = 0;
   int _earnedXp = 0;
   bool _isReplay = false;
+  bool _showIntro = true;
+
+  /// The teach phase, derived from the lesson's own content (see
+  /// lib/services/lesson_intro.dart). Lessons flagged skipIntro (unit
+  /// quizzes) never show it.
+  LessonIntro? _intro;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.lesson.skipIntro) {
+      _intro = buildLessonIntroForLesson(widget.lesson);
+      // Lesson content that yields neither words nor examples has nothing
+      // to teach; jump straight to the questions.
+      if (_intro!.words.isEmpty && _intro!.examples.isEmpty) {
+        _intro = null;
+      }
+    }
+    _showIntro = _intro != null;
+  }
 
   void _onQuestionDone(int xpEarned) {
     setState(() {
@@ -51,6 +73,8 @@ class _LessonScreenState extends State<LessonScreen> {
       _questionIndex = 0;
       _earnedXp = 0;
       _isReplay = true;
+      // Practice again is a re-test: skip the teach phase.
+      _showIntro = false;
     });
   }
 
@@ -78,6 +102,11 @@ class _LessonScreenState extends State<LessonScreen> {
               onFirstCompletion: () => _onLessonComplete(context),
               isReplay: _isReplay,
             )
+          : _showIntro
+          ? _LessonIntroView(
+              intro: _intro!,
+              onStart: () => setState(() => _showIntro = false),
+            )
           : _QuestionPage(
               key: ValueKey('q_${_questionIndex}_${widget.lesson.id}'),
               question: questions[_questionIndex],
@@ -86,6 +115,211 @@ class _LessonScreenState extends State<LessonScreen> {
               isReplay: _isReplay,
               onDone: _onQuestionDone,
             ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Teach phase (lesson intro)
+// ---------------------------------------------------------------------------
+
+class _LessonIntroView extends StatelessWidget {
+  const _LessonIntroView({required this.intro, required this.onStart});
+
+  final LessonIntro intro;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return ContentBox(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Study first',
+              style: TextStyle(
+                fontSize: TypeScale.bodySmall,
+                color: AppColors.textSecondary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+            const SizedBox(height: Spacing.xs),
+            const Text(
+              'New words',
+              style: TextStyle(
+                fontSize: TypeScale.headline,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+            const SizedBox(height: Spacing.s),
+            const Text(
+              'Tap the speaker to hear each one.',
+              style: TextStyle(
+                fontSize: TypeScale.bodySmall,
+                color: AppColors.textSecondary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+            const SizedBox(height: Spacing.lg),
+            for (final word in intro.words) _SpeakableRow(word: word),
+            if (intro.examples.isNotEmpty) ...[
+              const SizedBox(height: Spacing.lg),
+              const Text(
+                'Examples',
+                style: TextStyle(
+                  fontSize: TypeScale.headline,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+              const SizedBox(height: Spacing.s),
+              for (final example in intro.examples)
+                _ExampleRow(example: example),
+            ],
+            const SizedBox(height: Spacing.lg),
+            FlatButton(
+              key: const Key('lessonStartButton'),
+              label: 'Start',
+              enabled: true,
+              color: AppColors.secondary,
+              onTap: onStart,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeakableRow extends StatelessWidget {
+  const _SpeakableRow({required this.word});
+
+  final LessonIntroWord word;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.s),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              word.igbo,
+              style: const TextStyle(
+                fontSize: TypeScale.title,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+          ),
+          Text(
+            word.en,
+            style: const TextStyle(
+              fontSize: TypeScale.body,
+              color: AppColors.textSecondary,
+              fontFamily: 'NotoSans',
+            ),
+          ),
+          const SizedBox(width: Spacing.s),
+          _SpeakButton(icon: Icons.volume_up, token: word.igbo),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExampleRow extends StatelessWidget {
+  const _ExampleRow({required this.example});
+
+  final LessonIntroExample example;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Spacing.s),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.md,
+          vertical: Spacing.m,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    example.igbo,
+                    style: const TextStyle(
+                      fontSize: TypeScale.body,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontFamily: 'NotoSans',
+                    ),
+                  ),
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    example.en,
+                    style: const TextStyle(
+                      fontSize: TypeScale.bodySmall,
+                      color: AppColors.textSecondary,
+                      fontFamily: 'NotoSans',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _SpeakButton(icon: Icons.volume_up, token: example.igbo),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Speaker button that only appears when a bundled audio clip exists for
+/// the token (see AudioService + assets/audio/manifest.json).
+class _SpeakButton extends StatefulWidget {
+  const _SpeakButton({required this.icon, required this.token});
+
+  final IconData icon;
+  final String token;
+
+  @override
+  State<_SpeakButton> createState() => _SpeakButtonState();
+}
+
+class _SpeakButtonState extends State<_SpeakButton> {
+  bool? _available;
+
+  @override
+  void initState() {
+    super.initState();
+    AudioService.hasAudio(widget.token).then((available) {
+      if (mounted) setState(() => _available = available);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_available != true) return const SizedBox.shrink();
+    return IconButton(
+      key: Key('speak_${AudioService.tokenKey(widget.token)}'),
+      onPressed: () => AudioService.play(widget.token),
+      tooltip: 'Hear pronunciation',
+      icon: Icon(widget.icon, size: IconSizes.md, color: AppColors.secondary),
     );
   }
 }
