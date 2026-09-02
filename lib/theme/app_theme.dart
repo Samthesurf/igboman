@@ -19,7 +19,6 @@ abstract final class AppColors {
   static const Color warnBg = Color(0xFFF6EDE3); // light brown tint
   static const Color disabledFill = Color(0xFFE8DFD5);
   static const Color disabledText = Color(0xFF9E9085);
-  static const Color buttonEdge = Color(0xFF006B42); // darker green, flat button edge
 }
 
 ThemeData buildAppTheme() {
