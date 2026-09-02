@@ -145,11 +145,11 @@ class _TypingDotsState extends State<_TypingDots>
         );
       },
       child: Container(
-        width: 6,
-        height: 6,
+        width: Spacing.s,
+        height: Spacing.s,
         decoration: BoxDecoration(
           color: AppColors.secondary,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(Spacing.xs),
         ),
       ),
     );

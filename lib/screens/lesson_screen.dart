@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -8,7 +7,9 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
 import '../widgets/avatar_view.dart';
+import '../widgets/content_box.dart';
 import '../widgets/diacritic_bar.dart';
+import '../widgets/flat_button.dart';
 
 // ---------------------------------------------------------------------------
 // LessonScreen entry point
@@ -65,8 +66,8 @@ class _LessonScreenState extends State<LessonScreen> {
         progress: isComplete
             ? 1.0
             : questions.isEmpty
-                ? 1.0
-                : _questionIndex / questions.length,
+            ? 1.0
+            : _questionIndex / questions.length,
       ),
       body: isComplete
           ? _CompletionScreen(
@@ -101,8 +102,8 @@ class _LessonAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(
-        kToolbarHeight + ControlSizes.progressBarMd + Spacing.s,
-      );
+    kToolbarHeight + ControlSizes.progressBarMd + Spacing.s,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -222,10 +223,7 @@ class _QuestionPageState extends State<_QuestionPage>
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: kFastAnim,
-    );
+    _animController = AnimationController(vsync: this, duration: kFastAnim);
     _shakeAnim = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 8.0), weight: 25),
       TweenSequenceItem(tween: Tween(begin: 8.0, end: -8.0), weight: 50),
@@ -283,7 +281,8 @@ class _QuestionPageState extends State<_QuestionPage>
     switch (q.type) {
       case QuestionType.mcqIgboToEnglish:
       case QuestionType.mcqEnglishToIgbo:
-        final correct = _selectedOption == q.answer ||
+        final correct =
+            _selectedOption == q.answer ||
             (q.acceptedAnswers.isNotEmpty &&
                 q.acceptedAnswers.contains(_selectedOption));
         result = AnswerCheckResult(correct: correct);
@@ -411,7 +410,8 @@ class _QuestionPageState extends State<_QuestionPage>
 
   @override
   Widget build(BuildContext context) {
-    final isCorrect = _answerState == _AnswerState.correct ||
+    final isCorrect =
+        _answerState == _AnswerState.correct ||
         _answerState == _AnswerState.correctToneNote;
 
     return AnimatedBuilder(
@@ -427,10 +427,7 @@ class _QuestionPageState extends State<_QuestionPage>
 
         return Transform.translate(
           offset: Offset(offsetX, 0),
-          child: Transform.scale(
-            scale: scale,
-            child: child,
-          ),
+          child: Transform.scale(scale: scale, child: child),
         );
       },
       child: _buildBody(isCorrect),
@@ -441,9 +438,11 @@ class _QuestionPageState extends State<_QuestionPage>
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Spacing.md),
-            child: _buildQuestionContent(),
+          child: ContentBox(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+              child: _buildQuestionContent(),
+            ),
           ),
         ),
         if (_answerState != _AnswerState.idle) _buildFeedbackStrip(isCorrect),
@@ -499,13 +498,10 @@ class _QuestionPageState extends State<_QuestionPage>
   }
 
   Widget _buildConfirmBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          Spacing.md, Spacing.s, Spacing.md, Spacing.md),
-      child: SizedBox(
-        width: double.infinity,
-        height: ControlSizes.buttonHeight,
-        child: _FlatButton(
+    return ContentBox(
+      child: Padding(
+        padding: const EdgeInsets.only(top: Spacing.s, bottom: Spacing.md),
+        child: FlatButton(
           label: 'Check',
           enabled: _canConfirm,
           color: AppColors.secondary,
@@ -521,7 +517,9 @@ class _QuestionPageState extends State<_QuestionPage>
       width: double.infinity,
       color: isCorrect ? AppColors.successBg : AppColors.error.withAlpha(30),
       padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.md, vertical: Spacing.s),
+        horizontal: Spacing.md,
+        vertical: Spacing.s,
+      ),
       child: Row(
         children: [
           AvatarView(
@@ -575,13 +573,10 @@ class _QuestionPageState extends State<_QuestionPage>
   }
 
   Widget _buildContinueBar(bool isCorrect) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          Spacing.md, Spacing.s, Spacing.md, Spacing.md),
-      child: SizedBox(
-        width: double.infinity,
-        height: ControlSizes.buttonHeight,
-        child: _FlatButton(
+    return ContentBox(
+      child: Padding(
+        padding: const EdgeInsets.only(top: Spacing.s, bottom: Spacing.md),
+        child: FlatButton(
           label: 'Continue',
           enabled: true,
           color: isCorrect ? AppColors.secondary : AppColors.primary,
@@ -644,8 +639,11 @@ class _McqView extends StatelessWidget {
               borderColor = AppColors.secondary;
               bgColor = AppColors.successBg;
               textColor = AppColors.secondary;
-              trailingIcon = const Icon(Icons.check, color: AppColors.secondary,
-                  size: IconSizes.md);
+              trailingIcon = const Icon(
+                Icons.check,
+                color: AppColors.secondary,
+                size: IconSizes.md,
+              );
             } else if (isWrong) {
               borderColor = AppColors.error;
               bgColor = AppColors.error.withAlpha(20);
@@ -796,8 +794,11 @@ class _MatchPairsView extends StatelessWidget {
                               ),
                             ),
                             if (isMatched)
-                              const Icon(Icons.check,
-                                  color: AppColors.secondary, size: IconSizes.s),
+                              const Icon(
+                                Icons.check,
+                                color: AppColors.secondary,
+                                size: IconSizes.s,
+                              ),
                           ],
                         ),
                       ),
@@ -812,8 +813,7 @@ class _MatchPairsView extends StatelessWidget {
                 children: shuffled.map((right) {
                   final attempt = pairAttempts.firstWhere(
                     (p) => p.correctRight == right,
-                    orElse: () =>
-                        _PairAttempt(left: '', correctRight: right),
+                    orElse: () => _PairAttempt(left: '', correctRight: right),
                   );
                   final isMatched = attempt.matched;
                   final isShaking = attempt.shaking;
@@ -824,8 +824,7 @@ class _MatchPairsView extends StatelessWidget {
                       animation: animController,
                       builder: (context, child) {
                         return Transform.translate(
-                          offset: Offset(
-                              isShaking ? shakeAnim.value : 0.0, 0),
+                          offset: Offset(isShaking ? shakeAnim.value : 0.0, 0),
                           child: child,
                         );
                       },
@@ -838,15 +837,15 @@ class _MatchPairsView extends StatelessWidget {
                             color: isMatched
                                 ? AppColors.successBg
                                 : isShaking
-                                    ? AppColors.error.withAlpha(20)
-                                    : AppColors.surface,
+                                ? AppColors.error.withAlpha(20)
+                                : AppColors.surface,
                             borderRadius: BorderRadius.circular(Radii.card),
                             border: Border.all(
                               color: isMatched
                                   ? AppColors.secondary
                                   : isShaking
-                                      ? AppColors.error
-                                      : AppColors.cardBorder,
+                                  ? AppColors.error
+                                  : AppColors.cardBorder,
                             ),
                           ),
                           child: Text(
@@ -856,8 +855,8 @@ class _MatchPairsView extends StatelessWidget {
                               color: isMatched
                                   ? AppColors.secondary
                                   : isShaking
-                                      ? AppColors.error
-                                      : AppColors.textPrimary,
+                                  ? AppColors.error
+                                  : AppColors.textPrimary,
                               fontFamily: 'NotoSans',
                             ),
                             textAlign: TextAlign.center,
@@ -900,7 +899,8 @@ class _FillBlankView extends StatelessWidget {
     final parts = question.prompt.split('___');
     final filledText = filledSlots.isEmpty ? '' : filledSlots.join(' ');
 
-    final isCorrect = answerState == _AnswerState.correct ||
+    final isCorrect =
+        answerState == _AnswerState.correct ||
         answerState == _AnswerState.correctToneNote;
     final isWrong = answerState == _AnswerState.wrong;
 
@@ -948,8 +948,8 @@ class _FillBlankView extends StatelessWidget {
                       color: isCorrect
                           ? AppColors.successBg
                           : isWrong
-                              ? AppColors.error.withAlpha(20)
-                              : Colors.transparent,
+                          ? AppColors.error.withAlpha(20)
+                          : Colors.transparent,
                     ),
                     child: Text(
                       filledText.isEmpty ? '     ' : filledText,
@@ -958,8 +958,8 @@ class _FillBlankView extends StatelessWidget {
                         color: isCorrect
                             ? AppColors.secondary
                             : isWrong
-                                ? AppColors.error
-                                : AppColors.textPrimary,
+                            ? AppColors.error
+                            : AppColors.textPrimary,
                         fontFamily: 'NotoSans',
                         fontWeight: FontWeight.bold,
                       ),
@@ -1021,7 +1021,8 @@ class _TranslateView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = answerState == _AnswerState.idle;
-    final isCorrect = answerState == _AnswerState.correct ||
+    final isCorrect =
+        answerState == _AnswerState.correct ||
         answerState == _AnswerState.correctToneNote;
     final isWrong = answerState == _AnswerState.wrong;
 
@@ -1133,140 +1134,94 @@ class _CompletionScreenState extends State<_CompletionScreen> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Spacing.xl),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Check badge
-          Container(
-            width: AvatarSizes.hero,
-            height: AvatarSizes.hero,
-            decoration: BoxDecoration(
-              color: AppColors.secondary,
-              borderRadius: BorderRadius.circular(Radii.hero),
-            ),
-            child: const Icon(
-              Icons.check,
-              color: AppColors.onSecondary,
-              size: IconSizes.lg * 2,
-            ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: ControlSizes.contentMaxWidth,
           ),
-          const SizedBox(height: Spacing.md),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Check badge
+              Container(
+                width: AvatarSizes.hero,
+                height: AvatarSizes.hero,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(Radii.hero),
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: AppColors.onSecondary,
+                  size: IconSizes.lg * 2,
+                ),
+              ),
+              const SizedBox(height: Spacing.md),
 
-          // Ada avatar cheering
-          const AvatarView(
-            assetPath: 'assets/images/ada.png',
-            size: AvatarSizes.card,
-          ),
-          const SizedBox(height: Spacing.s),
+              // Ada avatar cheering
+              const AvatarView(
+                assetPath: 'assets/images/ada.png',
+                size: AvatarSizes.card,
+              ),
+              const SizedBox(height: Spacing.s),
 
-          const Text(
-            'Excellent!',
-            style: TextStyle(
-              fontSize: TypeScale.headline,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-          const SizedBox(height: Spacing.xs),
+              const Text(
+                'Excellent!',
+                style: TextStyle(
+                  fontSize: TypeScale.headline,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+              const SizedBox(height: Spacing.xs),
 
-          // XP count-up
-          if (!widget.isReplay)
-            TweenAnimationBuilder<int>(
-              tween: IntTween(begin: 0, end: totalXp),
-              duration: kMedAnim,
-              builder: (context, value, child) {
-                return Text(
-                  '$value XP',
-                  style: const TextStyle(
-                    fontSize: TypeScale.headline,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.secondary,
+              // XP count-up
+              if (!widget.isReplay)
+                TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: totalXp),
+                  duration: kMedAnim,
+                  builder: (context, value, child) {
+                    return Text(
+                      '$value XP',
+                      style: const TextStyle(
+                        fontSize: TypeScale.headline,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                        fontFamily: 'NotoSans',
+                      ),
+                    );
+                  },
+                ),
+              if (widget.isReplay)
+                const Text(
+                  'Practice complete',
+                  style: TextStyle(
+                    fontSize: TypeScale.body,
+                    color: AppColors.textSecondary,
                     fontFamily: 'NotoSans',
                   ),
-                );
-              },
-            ),
-          if (widget.isReplay)
-            const Text(
-              'Practice complete',
-              style: TextStyle(
-                fontSize: TypeScale.body,
-                color: AppColors.textSecondary,
-                fontFamily: 'NotoSans',
+                ),
+
+              const SizedBox(height: Spacing.lg),
+
+              // Continue button
+              FlatButton(
+                label: 'Continue',
+                enabled: true,
+                color: AppColors.secondary,
+                onTap: widget.onContinue,
               ),
-            ),
+              const SizedBox(height: Spacing.s),
 
-          const SizedBox(height: Spacing.lg),
-
-          // Continue button
-          SizedBox(
-            width: double.infinity,
-            height: ControlSizes.buttonHeight,
-            child: _FlatButton(
-              label: 'Continue',
-              enabled: true,
-              color: AppColors.secondary,
-              onTap: widget.onContinue,
-            ),
-          ),
-          const SizedBox(height: Spacing.s),
-
-          // Practice again button
-          SizedBox(
-            width: double.infinity,
-            height: ControlSizes.buttonHeight,
-            child: _FlatButton(
-              label: 'Practice again',
-              enabled: true,
-              color: AppColors.primary,
-              onTap: widget.onPracticeAgain,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared flat button
-// ---------------------------------------------------------------------------
-
-class _FlatButton extends StatelessWidget {
-  const _FlatButton({
-    required this.label,
-    required this.enabled,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool enabled;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : AppColors.disabledFill;
-    final textColor =
-        enabled ? AppColors.onSecondary : AppColors.disabledText;
-
-    return Material(
-      color: effectiveColor,
-      borderRadius: BorderRadius.circular(Radii.button),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.button),
-        onTap: enabled ? onTap : null,
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: TypeScale.body,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              fontFamily: 'NotoSans',
-            ),
+              // Practice again button
+              FlatButton(
+                label: 'Practice again',
+                enabled: true,
+                color: AppColors.primary,
+                onTap: widget.onPracticeAgain,
+              ),
+            ],
           ),
         ),
       ),
@@ -1280,10 +1235,8 @@ class _FlatButton extends StatelessWidget {
 
 class IntTween extends Tween<int> {
   IntTween({required int begin, required int end})
-      : super(begin: begin, end: end);
+    : super(begin: begin, end: end);
 
   @override
   int lerp(double t) => (begin! + (end! - begin!) * t).round();
 }
-
-

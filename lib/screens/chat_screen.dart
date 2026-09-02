@@ -12,6 +12,7 @@ import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
 import '../widgets/avatar_view.dart';
 import '../widgets/diacritic_bar.dart';
+import '../widgets/flat_button.dart';
 import '../widgets/speech_bubble.dart';
 
 /// Avatar chat screen where the learner talks with Ada, the Igbo tutor.
@@ -628,46 +629,22 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         children: [
           Expanded(
-            child: FilledButton(
+            child: FlatButton(
               key: const Key('chatPracticeAgain'),
-              onPressed: _practiceAgain,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                foregroundColor: AppColors.onSecondary,
-                minimumSize: const Size(0, ControlSizes.buttonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Radii.button),
-                ),
-              ),
-              child: const Text(
-                'Practice again',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'NotoSans',
-                ),
-              ),
+              label: 'Practice again',
+              enabled: true,
+              color: AppColors.secondary,
+              onTap: _practiceAgain,
             ),
           ),
           const SizedBox(width: Spacing.m),
           Expanded(
-            child: OutlinedButton(
+            child: FlatButton(
               key: const Key('chatDoneButton'),
-              onPressed: _done,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: const BorderSide(color: AppColors.cardBorder),
-                minimumSize: const Size(0, ControlSizes.buttonHeight),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Radii.button),
-                ),
-              ),
-              child: const Text(
-                'Done',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'NotoSans',
-                ),
-              ),
+              label: 'Done',
+              enabled: true,
+              color: AppColors.primary,
+              onTap: _done,
             ),
           ),
         ],

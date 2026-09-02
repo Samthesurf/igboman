@@ -8,6 +8,8 @@ import '../models/story.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
+import '../widgets/content_box.dart';
+import '../widgets/flat_button.dart';
 import '../widgets/tappable_text.dart';
 
 /// Story reader with three phases: new words, reading with tappable glosses,
@@ -88,8 +90,7 @@ class _StoryScreenState extends State<StoryScreen> {
     });
   }
 
-  LessonQuestion get _currentQuestion =>
-      widget.story.questions[_questionIndex];
+  LessonQuestion get _currentQuestion => widget.story.questions[_questionIndex];
 
   void _selectOption(String option) {
     if (_revealed) return;
@@ -100,13 +101,15 @@ class _StoryScreenState extends State<StoryScreen> {
     final question = _currentQuestion;
     final selected = _selectedOption;
     if (selected == null) return;
-    final correct = selected == question.answer ||
+    final correct =
+        selected == question.answer ||
         (question.acceptedAnswers.isNotEmpty &&
             question.acceptedAnswers.contains(selected));
     setState(() {
       _answeredCorrect = correct;
       if (!correct) {
-        _correctOption = question.answer ?? question.acceptedAnswers.firstOrNull;
+        _correctOption =
+            question.answer ?? question.acceptedAnswers.firstOrNull;
       }
       _revealed = true;
     });
@@ -213,81 +216,79 @@ class _StoryScreenState extends State<StoryScreen> {
   // -------------------------------------------------------------------------
 
   Widget _buildNewWords() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(Spacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'New words',
-            style: TextStyle(
-              fontSize: TypeScale.headline,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-          const SizedBox(height: Spacing.xs),
-          Text(
-            'Tap any word in the story to see its meaning.',
-            style: const TextStyle(
-              fontSize: TypeScale.body,
-              color: AppColors.textSecondary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-          const SizedBox(height: Spacing.lg),
-          Wrap(
-            spacing: Spacing.s,
-            runSpacing: Spacing.s,
-            children: [
-              for (final newWord in widget.story.newWords)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: Spacing.m,
-                    vertical: Spacing.s,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.successBg,
-                    borderRadius: BorderRadius.circular(Radii.chip),
-                  ),
-                  child: Text(
-                    newWord.igbo,
-                    style: const TextStyle(
-                      fontSize: TypeScale.body,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.secondary,
-                      fontFamily: 'NotoSans',
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: Spacing.md),
-          for (final newWord in widget.story.newWords)
-            Padding(
-              padding: const EdgeInsets.only(bottom: Spacing.s),
-              child: Text(
-                '${newWord.igbo} (${newWord.en})',
-                style: const TextStyle(
-                  fontSize: TypeScale.body,
-                  color: AppColors.textSecondary,
-                  fontFamily: 'NotoSans',
-                ),
+    return ContentBox(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'New words',
+              style: TextStyle(
+                fontSize: TypeScale.headline,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                fontFamily: 'NotoSans',
               ),
             ),
-          const SizedBox(height: Spacing.lg),
-          SizedBox(
-            width: double.infinity,
-            height: ControlSizes.buttonHeight,
-            child: _StoryFlatButton(
+            const SizedBox(height: Spacing.xs),
+            Text(
+              'Tap any word in the story to see its meaning.',
+              style: const TextStyle(
+                fontSize: TypeScale.body,
+                color: AppColors.textSecondary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+            const SizedBox(height: Spacing.lg),
+            Wrap(
+              spacing: Spacing.s,
+              runSpacing: Spacing.s,
+              children: [
+                for (final newWord in widget.story.newWords)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.m,
+                      vertical: Spacing.s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.successBg,
+                      borderRadius: BorderRadius.circular(Radii.chip),
+                    ),
+                    child: Text(
+                      newWord.igbo,
+                      style: const TextStyle(
+                        fontSize: TypeScale.body,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.secondary,
+                        fontFamily: 'NotoSans',
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: Spacing.md),
+            for (final newWord in widget.story.newWords)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.s),
+                child: Text(
+                  '${newWord.igbo} (${newWord.en})',
+                  style: const TextStyle(
+                    fontSize: TypeScale.body,
+                    color: AppColors.textSecondary,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
+              ),
+            const SizedBox(height: Spacing.lg),
+            FlatButton(
               label: 'Start reading',
               enabled: true,
               color: AppColors.secondary,
               onTap: () => setState(() => _phase = _StoryPhase.read),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -301,28 +302,27 @@ class _StoryScreenState extends State<StoryScreen> {
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Spacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final sentence in widget.story.sentences)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: Spacing.lg),
-                    child: _buildSentence(sentence, glosses),
-                  ),
-              ],
+          child: ContentBox(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final sentence in widget.story.sentences)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Spacing.lg),
+                      child: _buildSentence(sentence, glosses),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
         if (_glossWord != null) _buildGlossCard(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              Spacing.md, Spacing.s, Spacing.md, Spacing.md),
-          child: SizedBox(
-            width: double.infinity,
-            height: ControlSizes.buttonHeight,
-            child: _StoryFlatButton(
+        ContentBox(
+          child: Padding(
+            padding: const EdgeInsets.only(top: Spacing.s, bottom: Spacing.md),
+            child: FlatButton(
               label: 'Continue',
               enabled: true,
               color: AppColors.secondary,
@@ -369,48 +369,49 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Widget _buildGlossCard() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: Spacing.md),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.s,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.successBg,
-        borderRadius: BorderRadius.circular(Radii.card),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: kFastAnim,
-              child: Text(
-                _glossMeaning == null
-                    ? '$_glossWord: New word!'
-                    : '$_glossWord = $_glossMeaning',
-                key: ValueKey('$_glossWord$_glossMeaning'),
-                style: const TextStyle(
-                  fontSize: TypeScale.body,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
-                  fontFamily: 'NotoSans',
+    return ContentBox(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.md,
+          vertical: Spacing.s,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.successBg,
+          borderRadius: BorderRadius.circular(Radii.card),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: kFastAnim,
+                child: Text(
+                  _glossMeaning == null
+                      ? '$_glossWord: New word!'
+                      : '$_glossWord = $_glossMeaning',
+                  key: ValueKey('$_glossWord$_glossMeaning'),
+                  style: const TextStyle(
+                    fontSize: TypeScale.body,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.secondary,
+                    fontFamily: 'NotoSans',
+                  ),
                 ),
               ),
             ),
-          ),
-          GestureDetector(
-            onTap: _dismissGloss,
-            child: const Padding(
-              padding: EdgeInsets.all(Spacing.xs),
-              child: Icon(
-                Icons.close,
-                size: IconSizes.m,
-                color: AppColors.textSecondary,
+            GestureDetector(
+              onTap: _dismissGloss,
+              child: const Padding(
+                padding: EdgeInsets.all(Spacing.xs),
+                child: Icon(
+                  Icons.close,
+                  size: IconSizes.m,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -424,53 +425,53 @@ class _StoryScreenState extends State<StoryScreen> {
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Spacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Question ${_questionIndex + 1} of '
-                  '${widget.story.questions.length}',
-                  style: const TextStyle(
-                    fontSize: TypeScale.bodySmall,
-                    color: AppColors.textSecondary,
-                    fontFamily: 'NotoSans',
+          child: ContentBox(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Question ${_questionIndex + 1} of '
+                    '${widget.story.questions.length}',
+                    style: const TextStyle(
+                      fontSize: TypeScale.bodySmall,
+                      color: AppColors.textSecondary,
+                      fontFamily: 'NotoSans',
+                    ),
                   ),
-                ),
-                const SizedBox(height: Spacing.s),
-                Text(
-                  question.prompt,
-                  style: const TextStyle(
-                    fontSize: TypeScale.title,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    fontFamily: 'NotoSans',
+                  const SizedBox(height: Spacing.s),
+                  Text(
+                    question.prompt,
+                    style: const TextStyle(
+                      fontSize: TypeScale.title,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontFamily: 'NotoSans',
+                    ),
                   ),
-                ),
-                const SizedBox(height: Spacing.lg),
-                for (final option in question.options)
-                  _buildOptionCard(question, option),
-              ],
+                  const SizedBox(height: Spacing.lg),
+                  for (final option in question.options)
+                    _buildOptionCard(question, option),
+                ],
+              ),
             ),
           ),
         ),
         if (_revealed) _buildFeedbackStrip(),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              Spacing.md, Spacing.s, Spacing.md, Spacing.md),
-          child: SizedBox(
-            width: double.infinity,
-            height: ControlSizes.buttonHeight,
+        ContentBox(
+          child: Padding(
+            padding: const EdgeInsets.only(top: Spacing.s, bottom: Spacing.md),
             child: _revealed
-                ? _StoryFlatButton(
+                ? FlatButton(
                     label: 'Continue',
                     enabled: true,
-                    color:
-                        _answeredCorrect ? AppColors.secondary : AppColors.primary,
+                    color: _answeredCorrect
+                        ? AppColors.secondary
+                        : AppColors.primary,
                     onTap: _continueQuestion,
                   )
-                : _StoryFlatButton(
+                : FlatButton(
                     label: 'Check',
                     enabled: _selectedOption != null,
                     color: AppColors.secondary,
@@ -569,8 +570,9 @@ class _StoryScreenState extends State<StoryScreen> {
                   style: TextStyle(
                     fontSize: TypeScale.body,
                     fontWeight: FontWeight.bold,
-                    color:
-                        _answeredCorrect ? AppColors.secondary : AppColors.error,
+                    color: _answeredCorrect
+                        ? AppColors.secondary
+                        : AppColors.error,
                     fontFamily: 'NotoSans',
                   ),
                 ),
@@ -610,126 +612,83 @@ class _StoryScreenState extends State<StoryScreen> {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Spacing.xl),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Squircle check badge
-          Container(
-            width: AvatarSizes.hero,
-            height: AvatarSizes.hero,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.secondary,
-              borderRadius: BorderRadius.circular(Radii.hero),
-            ),
-            child: const Icon(
-              Icons.check,
-              color: AppColors.onSecondary,
-              size: IconSizes.lg * 2,
-            ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: ControlSizes.contentMaxWidth,
           ),
-          const SizedBox(height: Spacing.md),
-          const Text(
-            'Akụkọ!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: TypeScale.headline,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-          const SizedBox(height: Spacing.xs),
-          Text(
-            widget.story.titleEn,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: TypeScale.body,
-              color: AppColors.textSecondary,
-              fontFamily: 'NotoSans',
-            ),
-          ),
-          const SizedBox(height: Spacing.md),
-          TweenAnimationBuilder<int>(
-            tween: IntTween(begin: 0, end: totalXp),
-            duration: kMedAnim,
-            builder: (context, value, child) {
-              return Text(
-                '$value XP',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Squircle check badge
+              Container(
+                width: AvatarSizes.hero,
+                height: AvatarSizes.hero,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(Radii.hero),
+                ),
+                child: const Icon(
+                  Icons.check,
+                  color: AppColors.onSecondary,
+                  size: IconSizes.lg * 2,
+                ),
+              ),
+              const SizedBox(height: Spacing.md),
+              const Text(
+                'Akụkọ!',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: TypeScale.headline,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.secondary,
+                  color: AppColors.textPrimary,
                   fontFamily: 'NotoSans',
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: Spacing.lg),
-          SizedBox(
-            height: ControlSizes.buttonHeight,
-            child: _StoryFlatButton(
-              label: 'Talk about it',
-              enabled: true,
-              color: AppColors.secondary,
-              onTap: _showTalkSheet,
-            ),
-          ),
-          const SizedBox(height: Spacing.s),
-          SizedBox(
-            height: ControlSizes.buttonHeight,
-            child: _StoryFlatButton(
-              label: 'Back',
-              enabled: true,
-              color: AppColors.primary,
-              onTap: () => Navigator.of(context).pop(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shared flat button (design-matched to the lesson runner)
-// ---------------------------------------------------------------------------
-
-class _StoryFlatButton extends StatelessWidget {
-  const _StoryFlatButton({
-    required this.label,
-    required this.enabled,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool enabled;
-  final Color color;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveColor = enabled ? color : AppColors.disabledFill;
-    final textColor = enabled ? AppColors.onSecondary : AppColors.disabledText;
-
-    return Material(
-      color: effectiveColor,
-      borderRadius: BorderRadius.circular(Radii.button),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Radii.button),
-        onTap: enabled ? onTap : null,
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: TypeScale.body,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-              fontFamily: 'NotoSans',
-            ),
+              ),
+              const SizedBox(height: Spacing.xs),
+              Text(
+                widget.story.titleEn,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: TypeScale.body,
+                  color: AppColors.textSecondary,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+              const SizedBox(height: Spacing.md),
+              TweenAnimationBuilder<int>(
+                tween: IntTween(begin: 0, end: totalXp),
+                duration: kMedAnim,
+                builder: (context, value, child) {
+                  return Text(
+                    '$value XP',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: TypeScale.headline,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.secondary,
+                      fontFamily: 'NotoSans',
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Spacing.lg),
+              FlatButton(
+                label: 'Talk about it',
+                enabled: true,
+                color: AppColors.secondary,
+                onTap: _showTalkSheet,
+              ),
+              const SizedBox(height: Spacing.s),
+              FlatButton(
+                label: 'Back',
+                enabled: true,
+                color: AppColors.primary,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
         ),
       ),
@@ -743,7 +702,7 @@ class _StoryFlatButton extends StatelessWidget {
 
 class IntTween extends Tween<int> {
   IntTween({required int begin, required int end})
-      : super(begin: begin, end: end);
+    : super(begin: begin, end: end);
 
   @override
   int lerp(double t) => (begin! + (end! - begin!) * t).round();
