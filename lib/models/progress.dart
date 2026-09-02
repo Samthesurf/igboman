@@ -47,9 +47,29 @@ class ProgressData {
       return const ProgressData();
     }
 
-    final schemaVersion = (json['schemaVersion'] as num?)?.toInt() ?? 1;
-    final xp = (json['xp'] as num?)?.toInt() ?? 0;
-    final streakDays = (json['streakDays'] as num?)?.toInt() ?? 0;
+    int schemaVersion = 1;
+    final rawSchema = json['schemaVersion'];
+    if (rawSchema is num) {
+      schemaVersion = rawSchema.toInt();
+    } else if (rawSchema is String) {
+      schemaVersion = int.tryParse(rawSchema) ?? 1;
+    }
+
+    int xp = 0;
+    final rawXp = json['xp'];
+    if (rawXp is num) {
+      xp = rawXp.toInt();
+    } else if (rawXp is String) {
+      xp = int.tryParse(rawXp) ?? 0;
+    }
+
+    int streakDays = 0;
+    final rawStreak = json['streakDays'];
+    if (rawStreak is num) {
+      streakDays = rawStreak.toInt();
+    } else if (rawStreak is String) {
+      streakDays = int.tryParse(rawStreak) ?? 0;
+    }
 
     DateTime? lastActiveDay;
     final rawLastActiveDay = json['lastActiveDay'];
