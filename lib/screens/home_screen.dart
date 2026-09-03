@@ -877,19 +877,14 @@ class _UnitBadge extends StatelessWidget {
               size: IconSizes.m,
               color: AppColors.onSecondary,
             )
-          : Padding(
-              padding: const EdgeInsets.only(top: Spacing.xs),
-              child: Text(
-                '$number',
-                style: TextStyle(
-                  fontSize: TypeScale.body,
-                  height: 1.0,
-                  fontWeight: FontWeight.bold,
-                  color: locked
-                      ? AppColors.disabledText
-                      : AppColors.onSecondary,
-                  fontFamily: 'NotoSans',
-                ),
+          : Text(
+              '$number',
+              style: TextStyle(
+                fontSize: TypeScale.body,
+                height: 1.0,
+                fontWeight: FontWeight.bold,
+                color: locked ? AppColors.disabledText : AppColors.onSecondary,
+                fontFamily: 'NotoSans',
               ),
             ),
     );
