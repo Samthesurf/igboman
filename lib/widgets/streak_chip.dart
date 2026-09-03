@@ -47,13 +47,24 @@ class StreakChip extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.s,
+          horizontal: Spacing.m,
           vertical: Spacing.xs,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.surface, AppColors.warnBg],
+          ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.secondary, width: 1.5),
+          border: Border.all(color: AppColors.secondary, width: 2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -117,27 +128,74 @@ class StreakDetailsSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                const Text('🔥', style: TextStyle(fontSize: 24)),
-                const SizedBox(width: Spacing.s),
-                const Text(
-                  'Streak Details',
-                  style: TextStyle(
-                    fontSize: TypeScale.title,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    fontFamily: 'NotoSans',
+            Container(
+              key: const Key('streakFlameBadge'),
+              padding: const EdgeInsets.all(Spacing.md),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, AppColors.secondary],
+                ),
+                borderRadius: BorderRadius.circular(Radii.card),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
                   ),
-                ),
-                const Spacer(),
-                IconButton(
-                  key: const Key('closeStreakDetailsButton'),
-                  icon: const Icon(Icons.close, size: IconSizes.m),
-                  color: AppColors.textSecondary,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: AvatarSizes.card,
+                    height: AvatarSizes.card,
+                    decoration: BoxDecoration(
+                      color: AppColors.warnBg,
+                      borderRadius: BorderRadius.circular(Radii.hero),
+                      border: Border.all(color: AppColors.surface, width: 2),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      '🔥',
+                      style: TextStyle(fontSize: TypeScale.display),
+                    ),
+                  ),
+                  const SizedBox(width: Spacing.m),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Streak Details',
+                          style: TextStyle(
+                            fontSize: TypeScale.title,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onPrimary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                        SizedBox(height: Spacing.xs),
+                        Text(
+                          'Your daily run, at a glance.',
+                          style: TextStyle(
+                            fontSize: TypeScale.bodySmall,
+                            color: AppColors.warnBg,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    key: const Key('closeStreakDetailsButton'),
+                    icon: const Icon(Icons.close, size: IconSizes.m),
+                    color: AppColors.warnBg,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: Spacing.md),
             // Highlight card
@@ -284,6 +342,40 @@ class StreakDetailsSheet extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: Spacing.s),
+            Container(
+              key: const Key('streakMomentumFooter'),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.m,
+                vertical: Spacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.warnBg,
+                borderRadius: BorderRadius.circular(Radii.chip),
+                border: Border.all(color: AppColors.primary),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.directions_run,
+                    size: IconSizes.s,
+                    color: AppColors.primary,
+                  ),
+                  SizedBox(width: Spacing.xs),
+                  Expanded(
+                    child: Text(
+                      'One lesson a day keeps the run alive.',
+                      style: TextStyle(
+                        fontSize: TypeScale.caption,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontFamily: 'NotoSans',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: Spacing.lg),
             FlatButton(
               label: 'Got it',
@@ -353,7 +445,7 @@ class _DayPip extends StatelessWidget {
           decoration: BoxDecoration(
             color: pipColor,
             borderRadius: BorderRadius.circular(Radii.chip),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: borderColor, width: isToday ? 2 : 1),
           ),
           alignment: Alignment.center,
           child: wasActive

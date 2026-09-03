@@ -189,15 +189,30 @@ class StreakCelebrationDialog extends StatelessWidget {
               children: [
                 // Flame badge
                 Container(
+                  key: const Key('streakCelebrationBadge'),
                   width: AvatarSizes.hero,
                   height: AvatarSizes.hero,
                   decoration: BoxDecoration(
-                    color: AppColors.warnBg,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.primary, AppColors.secondary],
+                    ),
                     borderRadius: BorderRadius.circular(Radii.hero),
-                    border: Border.all(color: AppColors.primary, width: 2),
+                    border: Border.all(color: AppColors.warnBg, width: 2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
                   alignment: Alignment.center,
-                  child: const Text('🔥', style: TextStyle(fontSize: 32)),
+                  child: const Text(
+                    '🔥',
+                    style: TextStyle(fontSize: TypeScale.display),
+                  ),
                 ),
                 const SizedBox(height: Spacing.md),
                 Text(
@@ -237,6 +252,43 @@ class StreakCelebrationDialog extends StatelessWidget {
                     fontSize: TypeScale.bodySmall,
                     color: AppColors.textSecondary,
                     fontFamily: 'NotoSans',
+                  ),
+                ),
+                const SizedBox(height: Spacing.s),
+                Container(
+                  key: const Key('streakMilestoneBadge'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spacing.m,
+                    vertical: Spacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [AppColors.warnBg, AppColors.successBg],
+                    ),
+                    borderRadius: BorderRadius.circular(Radii.chip),
+                    border: Border.all(color: AppColors.primary),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.directions_run,
+                        size: IconSizes.s,
+                        color: AppColors.primary,
+                      ),
+                      SizedBox(width: Spacing.xs),
+                      Text(
+                        'Every day pushes you further!',
+                        style: TextStyle(
+                          fontSize: TypeScale.caption,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          fontFamily: 'NotoSans',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: Spacing.lg),

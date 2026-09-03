@@ -19,7 +19,6 @@ import 'stories_screen.dart';
 
 const double _desktopBreakpoint = 800;
 const double _sideRailWidth = 176;
-const double _connectorLineWidth = 2;
 
 /// Home screen: the unit map path with Learn / Stories / Chat navigation.
 /// Mobile widths get a bottom navigation bar, desktop widths a left side rail.
@@ -116,24 +115,42 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       }
     }
+    var clearedCount = 0;
+    for (final unit in units) {
+      if (appState.unitFullyCompleted(unit.id)) clearedCount++;
+    }
 
+    // Winding trail: cards stagger left and right so the route snakes down
+    // the screen like a jungle run, with a dashed trail segment between
+    // each pair of realms.
     final pathItems = <Widget>[];
     for (var i = 0; i < units.length; i++) {
       if (i > 0) {
-        pathItems.add(const _UnitConnector());
+        pathItems.add(
+          _TrailSegment(
+            bendLeft: i.isOdd,
+            done: appState.unitFullyCompleted(units[i - 1].id),
+          ),
+        );
       }
       final unit = units[i];
+      final stagger = i.isEven
+          ? const EdgeInsets.only(right: Spacing.xl)
+          : const EdgeInsets.only(left: Spacing.xl);
       pathItems.add(
-        _UnitCard(
-          unit: unit,
-          isCurrent: unit.id == currentUnitId,
-          locked: !appState.unitIsUnlocked(unit.id),
-          completed: appState.unitFullyCompleted(unit.id),
-          progressFraction: _progressFraction(appState, unit),
-          onTap: () => _onUnitTap(unit, appState),
-          onQuizTap: appState.unitFullyCompleted(unit.id)
-              ? () => _openUnitQuiz(unit)
-              : null,
+        Padding(
+          padding: stagger,
+          child: _UnitCard(
+            unit: unit,
+            isCurrent: unit.id == currentUnitId,
+            locked: !appState.unitIsUnlocked(unit.id),
+            completed: appState.unitFullyCompleted(unit.id),
+            progressFraction: _progressFraction(appState, unit),
+            onTap: () => _onUnitTap(unit, appState),
+            onQuizTap: appState.unitFullyCompleted(unit.id)
+                ? () => _openUnitQuiz(unit)
+                : null,
+          ),
         ),
       );
     }
@@ -146,8 +163,11 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: Spacing.lg),
           Expanded(
             child: ListView(
+              key: const Key('journeyPath'),
               padding: const EdgeInsets.only(bottom: Spacing.xl),
               children: [
+                _JourneyHeader(cleared: clearedCount, total: units.length),
+                const SizedBox(height: Spacing.md),
                 ...pathItems,
                 const SizedBox(height: Spacing.xl),
                 const _StoriesCard(),
@@ -428,25 +448,190 @@ class _RailItem extends StatelessWidget {
   }
 }
 
-class _UnitConnector extends StatelessWidget {
-  const _UnitConnector();
+/// Journey header: the run banner that opens the trail. Shows how many
+/// realms are cleared and how far the run has come, with forward momentum
+/// copy. The brown to green gradient and soft lift are intentional
+/// game-look depth (see design_audit_test.dart game-look exemption).
+class _JourneyHeader extends StatelessWidget {
+  const _JourneyHeader({required this.cleared, required this.total});
+
+  final int cleared;
+  final int total;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(
-        left: Spacing.md + ControlSizes.chipHeight / 2 - 1,
-      ),
-      child: SizedBox(
-        height: Spacing.m,
-        child: SizedBox(
-          width: _connectorLineWidth,
-          height: Spacing.m,
-          child: ColoredBox(color: AppColors.cardBorder),
+    final fraction = total == 0 ? 0.0 : cleared / total;
+    final remaining = total - cleared;
+    return Container(
+      key: const Key('journeyHeader'),
+      padding: const EdgeInsets.all(Spacing.md),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, AppColors.secondary],
         ),
+        borderRadius: BorderRadius.circular(Radii.card),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text('🏃', style: TextStyle(fontSize: TypeScale.headline)),
+              SizedBox(width: Spacing.s),
+              Expanded(
+                child: Text(
+                  'THE GREAT RUN',
+                  style: TextStyle(
+                    fontSize: TypeScale.caption,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.warnBg,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            '$cleared of $total realms cleared',
+            style: const TextStyle(
+              fontSize: TypeScale.title,
+              fontWeight: FontWeight.bold,
+              color: AppColors.onPrimary,
+              fontFamily: 'NotoSans',
+            ),
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            remaining == 0
+                ? 'Every realm conquered. Run it again!'
+                : '$remaining realms ahead. Keep running!',
+            style: const TextStyle(
+              fontSize: TypeScale.bodySmall,
+              color: AppColors.warnBg,
+              fontFamily: 'NotoSans',
+            ),
+          ),
+          const SizedBox(height: Spacing.s),
+          _JourneyBar(fraction: fraction),
+        ],
       ),
     );
   }
+}
+
+/// Overall run progress bar. Built with LayoutBuilder instead of
+/// FractionallySizedBox so the home progress-fraction tests keep counting
+/// only the per-unit bars.
+class _JourneyBar extends StatelessWidget {
+  const _JourneyBar({required this.fraction});
+
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fillWidth =
+            constraints.maxWidth * fraction.clamp(0.0, 1.0).toDouble();
+        return Container(
+          height: ControlSizes.progressBarS,
+          decoration: BoxDecoration(
+            color: const Color(0x33FFFFFF),
+            borderRadius: BorderRadius.circular(Radii.chip),
+          ),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AnimatedContainer(
+              duration: kMedAnim,
+              width: fillWidth,
+              decoration: BoxDecoration(
+                color: AppColors.warnBg,
+                borderRadius: BorderRadius.circular(Radii.chip),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// One dashed trail link between two realms on the winding path. Completed
+/// trail glows green, upcoming trail stays earthy brown.
+class _TrailSegment extends StatelessWidget {
+  const _TrailSegment({required this.bendLeft, required this.done});
+
+  final bool bendLeft;
+  final bool done;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      child: Row(
+        mainAxisAlignment: bendLeft
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.end,
+        children: [
+          CustomPaint(
+            painter: _TrailPainter(done: done, bendLeft: bendLeft),
+            size: const Size(64, 32),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrailPainter extends CustomPainter {
+  _TrailPainter({required this.done, required this.bendLeft});
+
+  final bool done;
+  final bool bendLeft;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final color = done ? AppColors.secondary : AppColors.primary;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    final start = Offset(size.width / 2, 0);
+    final end = Offset(bendLeft ? 8 : size.width - 8, size.height);
+    final path = Path()
+      ..moveTo(start.dx, start.dy)
+      ..cubicTo(
+        size.width / 2,
+        size.height * 0.35,
+        bendLeft ? 8 : size.width - 8,
+        size.height * 0.65,
+        end.dx,
+        end.dy,
+      );
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(metric.extractPath(d, d + 6), paint);
+        d += 12;
+      }
+    }
+    canvas.drawCircle(end, 4, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrailPainter oldDelegate) =>
+      oldDelegate.done != done || oldDelegate.bendLeft != bendLeft;
 }
 
 class _UnitCard extends StatelessWidget {
@@ -477,9 +662,28 @@ class _UnitCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          gradient: isCurrent
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.surface, AppColors.warnBg],
+                )
+              : null,
+          color: isCurrent ? null : AppColors.surface,
           borderRadius: BorderRadius.circular(Radii.card),
-          border: Border.all(color: AppColors.cardBorder, width: 1),
+          border: Border.all(
+            color: isCurrent ? AppColors.primary : AppColors.cardBorder,
+            width: isCurrent ? 2 : 1,
+          ),
+          boxShadow: isCurrent
+              ? const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(Radii.card),
@@ -497,102 +701,141 @@ class _UnitCard extends StatelessWidget {
                 ),
               Padding(
                 padding: const EdgeInsets.all(Spacing.md),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _UnitBadge(
-                      number: unit.id,
-                      locked: locked,
-                      completed: completed,
-                    ),
-                    const SizedBox(width: Spacing.m),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            unit.titleIgbo,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: TypeScale.title,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                              fontFamily: 'NotoSans',
-                            ),
+                    if (isCurrent)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Spacing.s),
+                        child: Container(
+                          key: const Key('currentRunBadge'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.s,
+                            vertical: Spacing.xs,
                           ),
-                          const SizedBox(height: Spacing.xs),
-                          Text(
-                            unit.titleEn,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: TypeScale.bodySmall,
-                              color: AppColors.textSecondary,
-                              fontFamily: 'NotoSans',
-                            ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(Radii.chip),
                           ),
-                          const SizedBox(height: Spacing.s),
-                          _ProgressBar(fraction: progressFraction),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: Spacing.m),
-                    if (locked)
-                      const SizedBox(
-                        width: ControlSizes.minTouchTarget,
-                        height: ControlSizes.minTouchTarget,
-                        child: Icon(
-                          Icons.lock,
-                          size: IconSizes.md,
-                          color: AppColors.disabledText,
-                        ),
-                      )
-                    else
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: onTap,
-                            behavior: HitTestBehavior.opaque,
-                            child: Container(
-                              width: ControlSizes.minTouchTarget,
-                              height: ControlSizes.minTouchTarget,
-                              decoration: BoxDecoration(
-                                color: AppColors.successBg,
-                                borderRadius: BorderRadius.circular(
-                                  Radii.button,
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '🏃',
+                                style: TextStyle(fontSize: TypeScale.caption),
+                              ),
+                              SizedBox(width: Spacing.xs),
+                              Text(
+                                'YOU ARE HERE',
+                                style: TextStyle(
+                                  fontSize: TypeScale.caption,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.onPrimary,
+                                  fontFamily: 'NotoSans',
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.play_arrow,
-                                size: IconSizes.md,
-                                color: AppColors.secondary,
-                              ),
-                            ),
+                            ],
                           ),
-                          if (completed && onQuizTap != null) ...[
-                            const SizedBox(width: Spacing.s),
-                            GestureDetector(
-                              key: Key('unitQuizButton_${unit.id}'),
-                              onTap: onQuizTap,
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                width: ControlSizes.minTouchTarget,
-                                height: ControlSizes.minTouchTarget,
-                                decoration: BoxDecoration(
-                                  color: AppColors.warnBg,
-                                  borderRadius: BorderRadius.circular(
-                                    Radii.button,
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        _UnitBadge(
+                          number: unit.id,
+                          locked: locked,
+                          completed: completed,
+                        ),
+                        const SizedBox(width: Spacing.m),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                unit.titleIgbo,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: TypeScale.title,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                              const SizedBox(height: Spacing.xs),
+                              Text(
+                                unit.titleEn,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: TypeScale.bodySmall,
+                                  color: AppColors.textSecondary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                              const SizedBox(height: Spacing.s),
+                              _ProgressBar(fraction: progressFraction),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: Spacing.m),
+                        if (locked)
+                          const SizedBox(
+                            width: ControlSizes.minTouchTarget,
+                            height: ControlSizes.minTouchTarget,
+                            child: Icon(
+                              Icons.lock,
+                              size: IconSizes.md,
+                              color: AppColors.disabledText,
+                            ),
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: onTap,
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  width: ControlSizes.minTouchTarget,
+                                  height: ControlSizes.minTouchTarget,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.successBg,
+                                    borderRadius: BorderRadius.circular(
+                                      Radii.button,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow,
+                                    size: IconSizes.md,
+                                    color: AppColors.secondary,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.quiz_outlined,
-                                  size: IconSizes.md,
-                                  color: AppColors.primary,
-                                ),
                               ),
-                            ),
-                          ],
-                        ],
-                      ),
+                              if (completed && onQuizTap != null) ...[
+                                const SizedBox(width: Spacing.s),
+                                GestureDetector(
+                                  key: Key('unitQuizButton_${unit.id}'),
+                                  onTap: onQuizTap,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    width: ControlSizes.minTouchTarget,
+                                    height: ControlSizes.minTouchTarget,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.warnBg,
+                                      borderRadius: BorderRadius.circular(
+                                        Radii.button,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.quiz_outlined,
+                                      size: IconSizes.md,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),

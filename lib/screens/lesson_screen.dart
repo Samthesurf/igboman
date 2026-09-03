@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -119,14 +121,17 @@ class _LessonScreenState extends State<LessonScreen> {
               intro: _intro!,
               onStart: () => setState(() => _showIntro = false),
             )
-          : _QuestionPage(
-              key: ValueKey('q_${_questionIndex}_${widget.lesson.id}'),
-              question: questions[_questionIndex],
-              questionNumber: _questionIndex + 1,
-              totalQuestions: questions.length,
-              isReplay: _isReplay,
-              initialCombo: _comboCount,
-              onDone: _onQuestionDone,
+          : _QuestionEntrance(
+              key: const Key('runQuestionEntrance'),
+              child: _QuestionPage(
+                key: ValueKey('q_${_questionIndex}_${widget.lesson.id}'),
+                question: questions[_questionIndex],
+                questionNumber: _questionIndex + 1,
+                totalQuestions: questions.length,
+                isReplay: _isReplay,
+                initialCombo: _comboCount,
+                onDone: _onQuestionDone,
+              ),
             ),
     );
   }
@@ -462,6 +467,60 @@ class _FlatProgressBar extends StatelessWidget {
 // Question page dispatcher
 // ---------------------------------------------------------------------------
 
+/// One-shot slide and fade entrance for each question. Unlike an
+/// AnimatedSwitcher, the outgoing page is never kept alive, so each action
+/// button exists exactly once in the tree.
+class _QuestionEntrance extends StatefulWidget {
+  const _QuestionEntrance({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<_QuestionEntrance> createState() => _QuestionEntranceState();
+}
+
+class _QuestionEntranceState extends State<_QuestionEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _slide;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: kMedAnim);
+    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0.25, 0),
+      end: Offset.zero,
+    ).animate(curve);
+    _fade = curve;
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _QuestionEntrance oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.child.key != widget.child.key) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slide,
+      child: FadeTransition(opacity: _fade, child: widget.child),
+    );
+  }
+}
+
 class _QuestionPage extends StatefulWidget {
   const _QuestionPage({
     super.key,
@@ -729,6 +788,7 @@ class _QuestionPageState extends State<_QuestionPage>
   Widget _buildBody(bool isCorrect) {
     return Column(
       children: [
+        _buildMomentumHud(),
         Expanded(
           child: ContentBox(
             child: SingleChildScrollView(
@@ -753,6 +813,86 @@ class _QuestionPageState extends State<_QuestionPage>
         if (isCorrect || _answerState == _AnswerState.wrong)
           _buildContinueBar(isCorrect),
       ],
+    );
+  }
+
+  /// Persistent run HUD: question position plus live combo heat. The combo
+  /// copy deliberately avoids the "Combo xN" wording used by the feedback
+  /// strip badge so each surface keeps a single, testable claim.
+  Widget _buildMomentumHud() {
+    final combo = _currentCombo;
+    return Container(
+      key: const Key('runMomentumBadge'),
+      margin: const EdgeInsets.only(
+        left: Spacing.md,
+        right: Spacing.md,
+        top: Spacing.s,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.m,
+        vertical: Spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [AppColors.warnBg, AppColors.successBg],
+        ),
+        borderRadius: BorderRadius.circular(Radii.chip),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const Text('🏃', style: TextStyle(fontSize: TypeScale.bodySmall)),
+          const SizedBox(width: Spacing.xs),
+          Text(
+            'Q${widget.questionNumber} of ${widget.totalQuestions}',
+            style: const TextStyle(
+              fontSize: TypeScale.caption,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+              fontFamily: 'NotoSans',
+            ),
+          ),
+          const Spacer(),
+          if (combo > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.s,
+                vertical: Spacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(Radii.chip),
+              ),
+              child: Text(
+                '🔥 Heat x$combo',
+                style: const TextStyle(
+                  fontSize: TypeScale.caption,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.onPrimary,
+                  fontFamily: 'NotoSans',
+                ),
+              ),
+            )
+          else
+            const Text(
+              'Build a combo!',
+              style: TextStyle(
+                fontSize: TypeScale.caption,
+                color: AppColors.textSecondary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1658,135 +1798,54 @@ class _CompletionScreenState extends State<_CompletionScreen> {
     final totalXp = appState.xp;
     final streakDays = appState.streakDays;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(Spacing.md),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: ControlSizes.contentMaxWidth,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Run Complete Banner
-              Container(
-                key: const Key('runCompleteBanner'),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.m,
-                  vertical: Spacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.successBg,
-                  borderRadius: BorderRadius.circular(Radii.chip),
-                  border: Border.all(color: AppColors.secondary),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.emoji_events,
-                      size: IconSizes.s,
-                      color: AppColors.secondary,
-                    ),
-                    SizedBox(width: Spacing.xs),
-                    Text(
-                      'Run Conquered!',
-                      style: TextStyle(
-                        fontSize: TypeScale.caption,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.secondary,
-                        fontFamily: 'NotoSans',
-                      ),
-                    ),
-                  ],
-                ),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.all(Spacing.md),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: ControlSizes.contentMaxWidth,
               ),
-              const SizedBox(height: Spacing.s),
-
-              // Ada avatar + Excellent! header row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const AvatarView(
-                    assetPath: 'assets/images/ada.png',
-                    size: AvatarSizes.chat,
-                  ),
-                  const SizedBox(width: Spacing.m),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Excellent!',
-                        style: TextStyle(
-                          fontSize: TypeScale.title,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                          fontFamily: 'NotoSans',
-                        ),
+                  // Run Complete Banner
+                  Container(
+                    key: const Key('runCompleteBanner'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.m,
+                      vertical: Spacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [AppColors.successBg, AppColors.warnBg],
                       ),
-                      if (!widget.isReplay)
-                        TweenAnimationBuilder<int>(
-                          tween: IntTween(begin: 0, end: totalXp),
-                          duration: kMedAnim,
-                          builder: (context, value, child) {
-                            return Text(
-                              '$value XP',
-                              style: const TextStyle(
-                                fontSize: TypeScale.body,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.secondary,
-                                fontFamily: 'NotoSans',
-                              ),
-                            );
-                          },
+                      borderRadius: BorderRadius.circular(Radii.chip),
+                      border: Border.all(color: AppColors.secondary),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x22000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
                         ),
-                      if (widget.isReplay)
-                        const Text(
-                          'Practice complete',
-                          style: TextStyle(
-                            fontSize: TypeScale.bodySmall,
-                            color: AppColors.textSecondary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: Spacing.s),
-
-              // Run Stats Card
-              Container(
-                key: const Key('runStatsCard'),
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.md,
-                  vertical: Spacing.s,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.warnBg,
-                  borderRadius: BorderRadius.circular(Radii.card),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'XP Earned',
+                        Icon(
+                          Icons.emoji_events,
+                          size: IconSizes.s,
+                          color: AppColors.secondary,
+                        ),
+                        SizedBox(width: Spacing.xs),
+                        Text(
+                          'Run Conquered!',
                           style: TextStyle(
                             fontSize: TypeScale.caption,
-                            color: AppColors.textSecondary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                        const SizedBox(height: Spacing.xs),
-                        Text(
-                          '+${widget.earnedXp} XP',
-                          style: const TextStyle(
-                            fontSize: TypeScale.body,
                             fontWeight: FontWeight.bold,
                             color: AppColors.secondary,
                             fontFamily: 'NotoSans',
@@ -1794,141 +1853,375 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                         ),
                       ],
                     ),
-                    Column(
-                      children: [
-                        const Text(
-                          'Accuracy',
-                          style: TextStyle(
-                            fontSize: TypeScale.caption,
-                            color: AppColors.textSecondary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                        const SizedBox(height: Spacing.xs),
-                        Text(
-                          widget.isReplay
-                              ? 'Practice Run'
-                              : (widget.isPerfect
-                                    ? 'Perfect Run'
-                                    : 'Completed'),
-                          style: const TextStyle(
-                            fontSize: TypeScale.body,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        const Text(
-                          'Streak',
-                          style: TextStyle(
-                            fontSize: TypeScale.caption,
-                            color: AppColors.textSecondary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                        const SizedBox(height: Spacing.xs),
-                        Text(
-                          '$streakDays Day Streak',
-                          style: const TextStyle(
-                            fontSize: TypeScale.body,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(height: Spacing.s),
 
-              const SizedBox(height: Spacing.s),
-
-              // Milestone Progress Bar
-              Container(
-                key: const Key('milestoneProgressBar'),
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: Spacing.md,
-                  vertical: Spacing.s,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(Radii.card),
-                  border: Border.all(color: AppColors.cardBorder),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.flag_outlined,
-                          size: IconSizes.s,
-                          color: AppColors.primary,
-                        ),
-                        SizedBox(width: Spacing.xs),
-                        Text(
-                          'Next Milestone: Unit Mastery',
-                          style: TextStyle(
-                            fontSize: TypeScale.caption,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Spacing.xs),
+                  if (widget.isPerfect && !widget.isReplay)
                     Container(
-                      height: ControlSizes.progressBarS,
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(Radii.chip),
+                      key: const Key('perfectRunBanner'),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.md,
+                        vertical: Spacing.s,
                       ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: 0.75,
-                        child: Container(
-                          decoration: BoxDecoration(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [AppColors.warnBg, AppColors.successBg],
+                        ),
+                        borderRadius: BorderRadius.circular(Radii.card),
+                        border: Border.all(color: AppColors.primary),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.emoji_events,
+                            size: IconSizes.s,
                             color: AppColors.primary,
+                          ),
+                          SizedBox(width: Spacing.xs),
+                          Text(
+                            'Flawless trail run, zero faults!',
+                            style: TextStyle(
+                              fontSize: TypeScale.caption,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                              fontFamily: 'NotoSans',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (widget.isPerfect && !widget.isReplay)
+                    const SizedBox(height: Spacing.s),
+
+                  // Ada avatar + Excellent! header row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const AvatarView(
+                        assetPath: 'assets/images/ada.png',
+                        size: AvatarSizes.chat,
+                      ),
+                      const SizedBox(width: Spacing.m),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Excellent!',
+                            style: TextStyle(
+                              fontSize: TypeScale.title,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                              fontFamily: 'NotoSans',
+                            ),
+                          ),
+                          if (!widget.isReplay)
+                            TweenAnimationBuilder<int>(
+                              tween: IntTween(begin: 0, end: totalXp),
+                              duration: kMedAnim,
+                              builder: (context, value, child) {
+                                return Text(
+                                  '$value XP',
+                                  style: const TextStyle(
+                                    fontSize: TypeScale.body,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.secondary,
+                                    fontFamily: 'NotoSans',
+                                  ),
+                                );
+                              },
+                            ),
+                          if (widget.isReplay)
+                            const Text(
+                              'Practice complete',
+                              style: TextStyle(
+                                fontSize: TypeScale.bodySmall,
+                                color: AppColors.textSecondary,
+                                fontFamily: 'NotoSans',
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: Spacing.s),
+
+                  // Run Stats Card
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.92, end: 1.0),
+                    duration: kMedAnim,
+                    builder: (context, value, child) {
+                      return Transform.scale(scale: value, child: child);
+                    },
+                    child: Container(
+                      key: const Key('runStatsCard'),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Spacing.md,
+                        vertical: Spacing.s,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.warnBg,
+                        borderRadius: BorderRadius.circular(Radii.card),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              const Text(
+                                'XP Earned',
+                                style: TextStyle(
+                                  fontSize: TypeScale.caption,
+                                  color: AppColors.textSecondary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                              const SizedBox(height: Spacing.xs),
+                              Text(
+                                '+${widget.earnedXp} XP',
+                                style: const TextStyle(
+                                  fontSize: TypeScale.body,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.secondary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                'Accuracy',
+                                style: TextStyle(
+                                  fontSize: TypeScale.caption,
+                                  color: AppColors.textSecondary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                              const SizedBox(height: Spacing.xs),
+                              Text(
+                                widget.isReplay
+                                    ? 'Practice Run'
+                                    : (widget.isPerfect
+                                          ? 'Perfect Run'
+                                          : 'Completed'),
+                                style: const TextStyle(
+                                  fontSize: TypeScale.body,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                'Streak',
+                                style: TextStyle(
+                                  fontSize: TypeScale.caption,
+                                  color: AppColors.textSecondary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                              const SizedBox(height: Spacing.xs),
+                              Text(
+                                '$streakDays Day Streak',
+                                style: const TextStyle(
+                                  fontSize: TypeScale.body,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: Spacing.s),
+
+                  // Milestone Progress Bar
+                  Container(
+                    key: const Key('milestoneProgressBar'),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.md,
+                      vertical: Spacing.s,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(Radii.card),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.flag_outlined,
+                              size: IconSizes.s,
+                              color: AppColors.primary,
+                            ),
+                            SizedBox(width: Spacing.xs),
+                            Text(
+                              'Next Milestone: Unit Mastery',
+                              style: TextStyle(
+                                fontSize: TypeScale.caption,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                                fontFamily: 'NotoSans',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: Spacing.xs),
+                        Container(
+                          height: ControlSizes.progressBarS,
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
                             borderRadius: BorderRadius.circular(Radii.chip),
                           ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: 0.75,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(Radii.chip),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              const SizedBox(height: Spacing.md),
+                  const SizedBox(height: Spacing.md),
 
-              // Continue button
-              FlatButton(
-                label: 'Continue',
-                enabled: true,
-                color: AppColors.secondary,
-                onTap: widget.onContinue,
-              ),
-              const SizedBox(height: Spacing.s),
+                  // Continue button
+                  FlatButton(
+                    label: 'Continue',
+                    enabled: true,
+                    color: AppColors.secondary,
+                    onTap: widget.onContinue,
+                  ),
+                  const SizedBox(height: Spacing.s),
 
-              // Practice again button
-              FlatButton(
-                label: 'Practice again',
-                enabled: true,
-                color: AppColors.primary,
-                onTap: widget.onPracticeAgain,
+                  // Practice again button
+                  FlatButton(
+                    label: 'Practice again',
+                    enabled: true,
+                    color: AppColors.primary,
+                    onTap: widget.onPracticeAgain,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+        const Positioned.fill(
+          key: Key('completionConfetti'),
+          child: IgnorePointer(child: _CompletionBurst()),
+        ),
+      ],
     );
   }
+}
+
+/// One-shot celebration burst for the completion screen. Unlike the looping
+/// streak confetti, this plays once and settles so widget tests using
+/// pumpAndSettle still terminate.
+class _CompletionBurst extends StatefulWidget {
+  const _CompletionBurst();
+
+  @override
+  State<_CompletionBurst> createState() => _CompletionBurstState();
+}
+
+class _CompletionBurstState extends State<_CompletionBurst>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return CustomPaint(
+          painter: _BurstPainter(progress: _controller.value),
+          size: Size.infinite,
+        );
+      },
+    );
+  }
+}
+
+class _BurstPainter extends CustomPainter {
+  _BurstPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const palette = [
+      AppColors.secondary,
+      AppColors.primary,
+      AppColors.warnBg,
+      AppColors.successBg,
+    ];
+    for (var i = 0; i < 24; i++) {
+      final angle = (i / 24) * 6.2832 + (i.isEven ? 0.2 : -0.2);
+      final distance = progress * (80 + (i % 5) * 32);
+      final center = Offset(size.width / 2, size.height * 0.3);
+      final pos =
+          center +
+          Offset(math.cos(angle) * distance, math.sin(angle) * distance);
+      final paint = Paint()
+        ..color = palette[i % palette.length]
+        ..style = PaintingStyle.fill;
+      canvas.save();
+      canvas.translate(pos.dx, pos.dy);
+      canvas.rotate(progress * 6.2832 + i);
+      canvas.drawRect(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: 8,
+          height: (i % 2 == 0) ? 12 : 8,
+        ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BurstPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 // ---------------------------------------------------------------------------

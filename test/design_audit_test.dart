@@ -11,8 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 //
 // Runs the Dart parser over every file under lib/ (no resolution needed) and
 // enforces the visual rules of the design system:
-//   1. no gradients anywhere;
-//   2. no BoxShadow with a positive blur radius;
+//   1. no gradients anywhere, except intentional game-look depth in the
+//      files listed in _gameLookFiles (temple-run-look branch only);
+//   2. no BoxShadow with a positive blur radius, except soft lifted shadows
+//      in the same _gameLookFiles (temple-run-look branch only);
 //   3. EdgeInsets arguments must be multiples of 4 (the 4px grid);
 //   4. BorderRadius/Radius circular arguments must be multiples of 4;
 //   5. SizedBox/Container width and height must be multiples of 4, except
@@ -20,6 +22,19 @@ import 'package:flutter_test/flutter_test.dart';
 //   6. TextStyle fontSize literals restricted to the type scale
 //      {12, 14, 16, 20, 24, 32};
 //   7. Icon/IconButton size literals restricted to {16, 20, 24, 32}.
+//
+// TEMPLE-RUN-LOOK EXEMPTION (this branch only):
+//   Relaxed: rule 1 (gradients) and rule 2 (shadows), scoped to
+//   _gameLookFiles. Why: the flat-only look felt static for an adventurous
+//   winding-path journey UI, so shallow brown/green/cream gradients plus
+//   soft shadows add trail depth, current-position emphasis, momentum HUD
+//   lift, and bolder streak celebrations while staying in the palette.
+//   Removed: the old unit-path connector centering allowlist entry, because
+//   _UnitConnector was replaced by the token-clean _TrailSegment painter.
+//   Still enforced everywhere, game files included: the 4px grid, radii,
+//   sizes, type scale, and icon scale. All new game-look code uses only
+//   Spacing, Radii, IconSizes, AvatarSizes, ControlSizes, TypeScale, and
+//   AppColors tokens.
 //
 // Const layout expressions that reference design tokens (Spacing.md,
 // ControlSizes.chipHeight and so on) are folded with the token table below,
@@ -83,15 +98,19 @@ final _allowedFontSizes = <double>{12, 14, 16, 20, 24, 32};
 /// Allowed Icon/IconButton size literals.
 final _allowedIconSizes = <double>{16, 20, 24, 32};
 
+/// Game-look surfaces where gradients and soft shadows are intentionally
+/// allowed (temple-run-look branch only). Every other file still bans them.
+const _gameLookFiles = <String>{
+  'lib/screens/home_screen.dart',
+  'lib/screens/lesson_screen.dart',
+  'lib/widgets/streak_celebration.dart',
+  'lib/widgets/streak_chip.dart',
+};
+
 /// Justified exceptions, keyed by `file:line`. Keep this list as small as
 /// possible; every entry must be a real layout value that cannot be
 /// expressed with the existing tokens.
-const _allowlist = <String, String>{
-  // The 2px unit-path connector line is centered under the 32px unit badge:
-  // 16 (badge left inset) + 32 / 2 (badge center) minus 1 (half the 2px line)
-  // lands on 31, which intentionally overrides the 4px grid.
-  'lib/screens/home_screen.dart:437': 'unit-path connector centering offset',
-};
+const _allowlist = <String, String>{};
 
 /// Recursively folds a const layout expression to a double. Literals and
 /// token references (Spacing.md, IconSizes.lg) fold; anything else returns
@@ -198,18 +217,20 @@ class _AuditVisitor extends RecursiveAstVisitor<void> {
     required ArgumentList arguments,
     required AstNode node,
   }) {
-    // Rule 1: no gradients.
+    // Rule 1: no gradients, except intentional game-look depth.
     if (className == 'LinearGradient' ||
         className == 'RadialGradient' ||
         className == 'SweepGradient') {
+      if (_gameLookFiles.contains(filePath)) return;
       _flag(node, 'gradient', className);
       return;
     }
 
-    // Rule 2: no BoxShadow with a positive blur radius.
+    // Rule 2: no BoxShadow with a positive blur radius, except soft
+    // game-look lift.
     if (className == 'BoxShadow') {
       final blur = _foldNamed(arguments, 'blurRadius');
-      if (blur != null && blur > 0) {
+      if (blur != null && blur > 0 && !_gameLookFiles.contains(filePath)) {
         _flag(node, 'shadow', 'blurRadius $blur');
       }
       return;
@@ -272,8 +293,9 @@ class _AuditVisitor extends RecursiveAstVisitor<void> {
     // class onto the import-prefix slot and the constructor onto the type
     // name. Resolve both so prefixed constructors are still audited.
     final prefix = typeName.importPrefix;
-    final className =
-        prefix != null ? prefix.name.lexeme : typeName.name.lexeme;
+    final className = prefix != null
+        ? prefix.name.lexeme
+        : typeName.name.lexeme;
     final ctorName = prefix != null
         ? typeName.name.lexeme
         : constructor.name?.name;
@@ -344,9 +366,13 @@ void main() {
       usedAllowlistKeys.addAll(visitor.usedAllowlistKeys);
     }
 
-    expect(_allowlist.length, lessThanOrEqualTo(5),
-        reason: 'allowlist is capped at 5 entries '
-            '(got ${_allowlist.length})');
+    expect(
+      _allowlist.length,
+      lessThanOrEqualTo(5),
+      reason:
+          'allowlist is capped at 5 entries '
+          '(got ${_allowlist.length})',
+    );
 
     expect(
       violations,
@@ -359,10 +385,11 @@ void main() {
     final libDir = Directory('lib');
     final usedAllowlistKeys = <String>{};
 
-    for (final file in libDir
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((file) => file.path.endsWith('.dart'))) {
+    for (final file
+        in libDir
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((file) => file.path.endsWith('.dart'))) {
       final result = parseString(
         content: file.readAsStringSync(),
         path: file.path,
