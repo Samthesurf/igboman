@@ -329,7 +329,7 @@ void main() {
       expect(find.byKey(const Key('trailSegment_13')), findsNothing);
     });
 
-    testWidgets('journey banner uses the green vertical gradient', (
+    testWidgets('journey banner uses the white to light-green flow', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapHome(_freshState()));
@@ -342,7 +342,7 @@ void main() {
       final gradient = decoration.gradient! as LinearGradient;
       expect(gradient.begin, Alignment.topCenter);
       expect(gradient.end, Alignment.bottomCenter);
-      expect(gradient.colors, [AppColors.secondary, AppColors.secondaryDeep]);
+      expect(gradient.colors, [AppColors.surface, AppColors.successBg]);
     });
   });
 

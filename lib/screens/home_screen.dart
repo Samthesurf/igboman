@@ -451,8 +451,8 @@ class _RailItem extends StatelessWidget {
 
 /// Journey header: the run banner that opens the trail. Shows how many
 /// realms are cleared and how far the run has come, with forward momentum
-/// copy. The predominantly-green vertical gradient follows the same flow as
-/// the current-lesson card gradient with soft lift for game-look depth
+/// copy. It uses the same white to light-green vertical flow as the
+/// current-lesson card gradient with soft lift for game-look depth
 /// (see design_audit_test.dart game-look exemption).
 class _JourneyHeader extends StatelessWidget {
   const _JourneyHeader({required this.cleared, required this.total});
@@ -471,9 +471,10 @@ class _JourneyHeader extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [AppColors.secondary, AppColors.secondaryDeep],
+          colors: [AppColors.surface, AppColors.successBg],
         ),
         borderRadius: BorderRadius.circular(Radii.card),
+        border: Border.all(color: AppColors.cardBorder),
         boxShadow: const [
           BoxShadow(
             color: Color(0x33000000),
@@ -490,7 +491,7 @@ class _JourneyHeader extends StatelessWidget {
               Icon(
                 Icons.directions_run,
                 size: IconSizes.md,
-                color: AppColors.warnBg,
+                color: AppColors.secondary,
               ),
               SizedBox(width: Spacing.s),
               Expanded(
@@ -499,7 +500,7 @@ class _JourneyHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: TypeScale.caption,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.warnBg,
+                    color: AppColors.secondary,
                     fontFamily: 'NotoSans',
                   ),
                 ),
@@ -512,7 +513,7 @@ class _JourneyHeader extends StatelessWidget {
             style: const TextStyle(
               fontSize: TypeScale.title,
               fontWeight: FontWeight.bold,
-              color: AppColors.onPrimary,
+              color: AppColors.textPrimary,
               fontFamily: 'NotoSans',
             ),
           ),
@@ -523,7 +524,7 @@ class _JourneyHeader extends StatelessWidget {
                 : '$remaining realms ahead. Keep running!',
             style: const TextStyle(
               fontSize: TypeScale.bodySmall,
-              color: AppColors.warnBg,
+              color: AppColors.textSecondary,
               fontFamily: 'NotoSans',
             ),
           ),
@@ -552,7 +553,7 @@ class _JourneyBar extends StatelessWidget {
         return Container(
           height: ControlSizes.progressBarS,
           decoration: BoxDecoration(
-            color: const Color(0x33FFFFFF),
+            color: AppColors.cardBorder,
             borderRadius: BorderRadius.circular(Radii.chip),
           ),
           child: Align(
@@ -561,7 +562,7 @@ class _JourneyBar extends StatelessWidget {
               duration: kMedAnim,
               width: fillWidth,
               decoration: BoxDecoration(
-                color: AppColors.warnBg,
+                color: AppColors.secondary,
                 borderRadius: BorderRadius.circular(Radii.chip),
               ),
             ),
@@ -880,6 +881,7 @@ class _UnitBadge extends StatelessWidget {
               '$number',
               style: TextStyle(
                 fontSize: TypeScale.body,
+                height: 1.0,
                 fontWeight: FontWeight.bold,
                 color: locked ? AppColors.disabledText : AppColors.onSecondary,
                 fontFamily: 'NotoSans',
