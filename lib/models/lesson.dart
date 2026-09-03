@@ -23,6 +23,8 @@ class LessonQuestion {
   final List<MatchPair> pairs;
   final List<String> wordBank;
   final bool toneLenient;
+  final String? hint;
+  final String? explanation;
 
   const LessonQuestion({
     required this.id,
@@ -34,6 +36,8 @@ class LessonQuestion {
     this.pairs = const [],
     this.wordBank = const [],
     this.toneLenient = false,
+    this.hint,
+    this.explanation,
   });
 }
 

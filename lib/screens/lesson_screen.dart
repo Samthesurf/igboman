@@ -12,6 +12,7 @@ import '../widgets/avatar_view.dart';
 import '../widgets/content_box.dart';
 import '../widgets/diacritic_bar.dart';
 import '../widgets/flat_button.dart';
+import '../widgets/streak_celebration.dart';
 
 // ---------------------------------------------------------------------------
 // LessonScreen entry point
@@ -29,6 +30,8 @@ class LessonScreen extends StatefulWidget {
 class _LessonScreenState extends State<LessonScreen> {
   int _questionIndex = 0;
   int _earnedXp = 0;
+  int _comboCount = 0;
+  bool _hadMistake = false;
   bool _isReplay = false;
   bool _showIntro = true;
 
@@ -51,14 +54,18 @@ class _LessonScreenState extends State<LessonScreen> {
     _showIntro = _intro != null;
   }
 
-  void _onQuestionDone(int xpEarned) {
+  void _onQuestionDone(int xpEarned, int newCombo, bool hadMistake) {
     setState(() {
       _earnedXp += xpEarned;
+      _comboCount = newCombo;
+      if (hadMistake) {
+        _hadMistake = true;
+      }
       _questionIndex++;
     });
   }
 
-  void _onLessonComplete(BuildContext context) async {
+  Future<void> _onLessonComplete(BuildContext context) async {
     final appState = context.read<AppState>();
     final alreadyDone = appState.isLessonCompleted(widget.lesson.id);
     if (!_isReplay && !alreadyDone) {
@@ -72,6 +79,8 @@ class _LessonScreenState extends State<LessonScreen> {
     setState(() {
       _questionIndex = 0;
       _earnedXp = 0;
+      _comboCount = 0;
+      _hadMistake = false;
       _isReplay = true;
       // Practice again is a re-test: skip the teach phase.
       _showIntro = false;
@@ -87,6 +96,8 @@ class _LessonScreenState extends State<LessonScreen> {
       backgroundColor: AppColors.background,
       appBar: _LessonAppBar(
         title: widget.lesson.title,
+        questionNumber: isComplete ? questions.length : (_questionIndex + 1),
+        totalQuestions: questions.length,
         progress: isComplete
             ? 1.0
             : questions.isEmpty
@@ -101,6 +112,7 @@ class _LessonScreenState extends State<LessonScreen> {
               onPracticeAgain: _restartLesson,
               onFirstCompletion: () => _onLessonComplete(context),
               isReplay: _isReplay,
+              isPerfect: !_hadMistake,
             )
           : _showIntro
           ? _LessonIntroView(
@@ -113,6 +125,7 @@ class _LessonScreenState extends State<LessonScreen> {
               questionNumber: _questionIndex + 1,
               totalQuestions: questions.length,
               isReplay: _isReplay,
+              initialCombo: _comboCount,
               onDone: _onQuestionDone,
             ),
     );
@@ -329,10 +342,17 @@ class _SpeakButtonState extends State<_SpeakButton> {
 // ---------------------------------------------------------------------------
 
 class _LessonAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _LessonAppBar({required this.title, required this.progress});
+  const _LessonAppBar({
+    required this.title,
+    required this.progress,
+    this.questionNumber,
+    this.totalQuestions,
+  });
 
   final String title;
   final double progress;
+  final int? questionNumber;
+  final int? totalQuestions;
 
   @override
   Size get preferredSize => const Size.fromHeight(
@@ -366,6 +386,30 @@ class _LessonAppBar extends StatelessWidget implements PreferredSizeWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (questionNumber != null &&
+                    totalQuestions != null &&
+                    totalQuestions! > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.s,
+                      vertical: Spacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warnBg,
+                      borderRadius: BorderRadius.circular(Radii.chip),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: Text(
+                      'Question $questionNumber of $totalQuestions',
+                      style: const TextStyle(
+                        fontSize: TypeScale.caption,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontFamily: 'NotoSans',
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: Spacing.md),
               ],
             ),
@@ -390,6 +434,7 @@ class _FlatProgressBar extends StatelessWidget {
         builder: (context, constraints) {
           final fillWidth = (constraints.maxWidth * progress.clamp(0.0, 1.0));
           return Container(
+            key: const Key('lessonRunTrack'),
             height: ControlSizes.progressBarMd,
             decoration: BoxDecoration(
               color: AppColors.cardBorder,
@@ -425,13 +470,15 @@ class _QuestionPage extends StatefulWidget {
     required this.totalQuestions,
     required this.isReplay,
     required this.onDone,
+    this.initialCombo = 0,
   });
 
   final LessonQuestion question;
   final int questionNumber;
   final int totalQuestions;
   final bool isReplay;
-  final void Function(int xpEarned) onDone;
+  final void Function(int xpEarned, int newCombo, bool hadMistake) onDone;
+  final int initialCombo;
 
   @override
   State<_QuestionPage> createState() => _QuestionPageState();
@@ -454,9 +501,14 @@ class _QuestionPageState extends State<_QuestionPage>
   List<String> _filledSlots = []; // fillBlank
   final _translateController = TextEditingController(); // translate
 
+  int _currentCombo = 0;
+  bool _hadMistake = false;
+  bool _showHint = false;
+
   @override
   void initState() {
     super.initState();
+    _currentCombo = widget.initialCombo;
     _animController = AnimationController(vsync: this, duration: kFastAnim);
     _shakeAnim = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 8.0), weight: 25),
@@ -551,6 +603,7 @@ class _QuestionPageState extends State<_QuestionPage>
 
   void _applyResult(AnswerCheckResult result) {
     if (result.correct) {
+      _currentCombo = widget.initialCombo + 1;
       setState(() {
         _answerState = result.toneNote
             ? _AnswerState.correctToneNote
@@ -558,6 +611,8 @@ class _QuestionPageState extends State<_QuestionPage>
       });
       _animController.forward(from: 0);
     } else {
+      _currentCombo = 0;
+      _hadMistake = true;
       setState(() {
         _answerState = _AnswerState.wrong;
       });
@@ -578,7 +633,7 @@ class _QuestionPageState extends State<_QuestionPage>
   }
 
   void _continue() {
-    widget.onDone(_computeXp());
+    widget.onDone(_computeXp(), _currentCombo, _hadMistake);
   }
 
   // matchPairs pair tap handler
@@ -607,11 +662,14 @@ class _QuestionPageState extends State<_QuestionPage>
       });
       // Check if all matched
       if (_pairAttempts.every((p) => p.matched)) {
+        _currentCombo = widget.initialCombo + 1;
         setState(() => _answerState = _AnswerState.correct);
         _animController.forward(from: 0);
       }
     } else {
       // Wrong pair: shake and deselect
+      _currentCombo = 0;
+      _hadMistake = true;
       setState(() {
         attempt.shaking = true;
         _selectedLeft = null;
@@ -675,7 +733,16 @@ class _QuestionPageState extends State<_QuestionPage>
           child: ContentBox(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: Spacing.md),
-              child: _buildQuestionContent(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildQuestionContent(),
+                  if (_answerState == _AnswerState.idle) ...[
+                    const SizedBox(height: Spacing.md),
+                    _buildHintSection(),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -687,6 +754,121 @@ class _QuestionPageState extends State<_QuestionPage>
           _buildContinueBar(isCorrect),
       ],
     );
+  }
+
+  Widget _buildHintSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!_showHint)
+          GestureDetector(
+            key: const Key('hintButton'),
+            onTap: () => setState(() => _showHint = true),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.m,
+                vertical: Spacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.warnBg,
+                borderRadius: BorderRadius.circular(Radii.chip),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: IconSizes.s,
+                    color: AppColors.primary,
+                  ),
+                  SizedBox(width: Spacing.xs),
+                  Text(
+                    'Hint',
+                    style: TextStyle(
+                      fontSize: TypeScale.caption,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontFamily: 'NotoSans',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (_showHint)
+          Container(
+            key: const Key('hintCard'),
+            width: double.infinity,
+            padding: const EdgeInsets.all(Spacing.m),
+            decoration: BoxDecoration(
+              color: AppColors.warnBg,
+              borderRadius: BorderRadius.circular(Radii.card),
+              border: Border.all(color: AppColors.primary),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.lightbulb_outline,
+                      size: IconSizes.s,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: Spacing.xs),
+                    const Text(
+                      'Hint',
+                      style: TextStyle(
+                        fontSize: TypeScale.caption,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontFamily: 'NotoSans',
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      key: const Key('hintDismissButton'),
+                      icon: const Icon(Icons.close, size: IconSizes.s),
+                      color: AppColors.textSecondary,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 24,
+                        minHeight: 24,
+                      ),
+                      onPressed: () => setState(() => _showHint = false),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  widget.question.hint ?? _getContextualHint(widget.question),
+                  style: const TextStyle(
+                    fontSize: TypeScale.bodySmall,
+                    color: AppColors.textPrimary,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _getContextualHint(LessonQuestion q) {
+    switch (q.type) {
+      case QuestionType.translate:
+        return 'Pay attention to tone marks and sentence word order.';
+      case QuestionType.fillBlank:
+        return 'Consider which word logically completes the sentence.';
+      case QuestionType.matchPairs:
+        return 'Look for cognates and familiar vocabulary roots.';
+      case QuestionType.mcqIgboToEnglish:
+      case QuestionType.mcqEnglishToIgbo:
+        return 'Look closely at the Igbo root word.';
+    }
   }
 
   Widget _buildQuestionContent() {
@@ -754,56 +936,151 @@ class _QuestionPageState extends State<_QuestionPage>
         horizontal: Spacing.md,
         vertical: Spacing.s,
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AvatarView(
-            assetPath: isCorrect ? 'assets/images/ada.png' : null,
-            size: AvatarSizes.card,
-          ),
-          const SizedBox(width: Spacing.m),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isCorrect ? 'Correct!' : 'Not quite',
-                  style: TextStyle(
-                    fontSize: TypeScale.body,
-                    fontWeight: FontWeight.bold,
-                    color: isCorrect ? AppColors.secondary : AppColors.error,
-                    fontFamily: 'NotoSans',
-                  ),
+          Row(
+            children: [
+              AvatarView(
+                assetPath: isCorrect ? 'assets/images/ada.png' : null,
+                size: AvatarSizes.card,
+              ),
+              const SizedBox(width: Spacing.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          isCorrect ? 'Correct!' : 'Not quite',
+                          style: TextStyle(
+                            fontSize: TypeScale.body,
+                            fontWeight: FontWeight.bold,
+                            color: isCorrect
+                                ? AppColors.secondary
+                                : AppColors.error,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                        if (isCorrect && _currentCombo > 0) ...[
+                          const SizedBox(width: Spacing.s),
+                          Container(
+                            key: const Key('runComboBadge'),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.s,
+                              vertical: Spacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.warnBg,
+                              borderRadius: BorderRadius.circular(Radii.chip),
+                              border: Border.all(color: AppColors.primary),
+                            ),
+                            child: Text(
+                              'Combo x$_currentCombo',
+                              style: const TextStyle(
+                                fontSize: TypeScale.caption,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                                fontFamily: 'NotoSans',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (isToneNote)
+                      const Text(
+                        'Watch the tone marks',
+                        style: TextStyle(
+                          fontSize: TypeScale.bodySmall,
+                          color: AppColors.textSecondary,
+                          fontFamily: 'NotoSans',
+                        ),
+                      ),
+                    if (!isCorrect && _correctOption != null)
+                      Text(
+                        'Answer: $_correctOption',
+                        style: const TextStyle(
+                          fontSize: TypeScale.bodySmall,
+                          color: AppColors.textSecondary,
+                          fontFamily: 'NotoSans',
+                        ),
+                      ),
+                  ],
                 ),
-                if (isToneNote)
-                  const Text(
-                    'Watch the tone marks',
-                    style: TextStyle(
-                      fontSize: TypeScale.bodySmall,
-                      color: AppColors.textSecondary,
-                      fontFamily: 'NotoSans',
-                    ),
-                  ),
-                if (!isCorrect && _correctOption != null)
-                  Text(
-                    'Answer: $_correctOption',
-                    style: const TextStyle(
-                      fontSize: TypeScale.bodySmall,
-                      color: AppColors.textSecondary,
-                      fontFamily: 'NotoSans',
-                    ),
-                  ),
-              ],
-            ),
+              ),
+              Icon(
+                isCorrect ? Icons.check_circle_outline : Icons.close,
+                color: isCorrect ? AppColors.secondary : AppColors.error,
+                size: IconSizes.lg,
+              ),
+            ],
           ),
-          Icon(
-            isCorrect ? Icons.check_circle_outline : Icons.close,
-            color: isCorrect ? AppColors.secondary : AppColors.error,
-            size: IconSizes.lg,
+          const SizedBox(height: Spacing.xs),
+          Container(
+            key: const Key('answerExplanation'),
+            width: double.infinity,
+            padding: const EdgeInsets.all(Spacing.s),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(Radii.chip),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Text(
+              _getExplanation(widget.question, isCorrect),
+              style: const TextStyle(
+                fontSize: TypeScale.caption,
+                color: AppColors.textSecondary,
+                fontFamily: 'NotoSans',
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _getExplanation(LessonQuestion q, bool isCorrect) {
+    if (isCorrect && q.explanation != null) {
+      return q.explanation!;
+    }
+    if (isCorrect) {
+      switch (q.type) {
+        case QuestionType.mcqIgboToEnglish:
+        case QuestionType.mcqEnglishToIgbo:
+          final ans = q.answer ?? _selectedOption ?? 'this option';
+          return '$ans is the correct translation.';
+        case QuestionType.translate:
+          return 'Great translation! You captured the right meaning and tone marks.';
+        case QuestionType.fillBlank:
+          final ans = q.answer ?? '';
+          return '$ans completes the phrase accurately.';
+        case QuestionType.matchPairs:
+          return 'All vocabulary pairs matched correctly.';
+      }
+    } else {
+      final ans =
+          _correctOption ??
+          q.answer ??
+          (q.acceptedAnswers.isNotEmpty ? q.acceptedAnswers.first : '');
+      if (q.explanation != null) {
+        return 'The correct answer is $ans. ${q.explanation!}';
+      }
+      switch (q.type) {
+        case QuestionType.mcqIgboToEnglish:
+        case QuestionType.mcqEnglishToIgbo:
+          return 'The correct answer is $ans. Notice the syllable structure and tones.';
+        case QuestionType.translate:
+          return 'Expected: $ans. Pay attention to diacritics and vowels.';
+        case QuestionType.fillBlank:
+          return 'The sentence requires $ans. Check the surrounding context.';
+        case QuestionType.matchPairs:
+          return 'Review the vocabulary pairs to reinforce the connections.';
+      }
+    }
   }
 
   Widget _buildContinueBar(bool isCorrect) {
@@ -1333,14 +1610,16 @@ class _CompletionScreen extends StatefulWidget {
     required this.onPracticeAgain,
     required this.onFirstCompletion,
     required this.isReplay,
+    this.isPerfect = true,
   });
 
   final int earnedXp;
   final String lessonId;
   final VoidCallback onContinue;
   final VoidCallback onPracticeAgain;
-  final VoidCallback onFirstCompletion;
+  final Future<void> Function() onFirstCompletion;
   final bool isReplay;
+  final bool isPerfect;
 
   @override
   State<_CompletionScreen> createState() => _CompletionScreenState();
@@ -1356,7 +1635,19 @@ class _CompletionScreenState extends State<_CompletionScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_completionReported && mounted) {
         _completionReported = true;
+        final appState = context.read<AppState>();
+        final wasRestored = isStreakRestored(
+          lastActiveDay: appState.progress.lastActiveDay,
+          now: DateTime.now(),
+        );
         widget.onFirstCompletion();
+        if (wasRestored && mounted) {
+          showStreakCelebration(
+            context,
+            streakDays: appState.streakDays,
+            isRestored: true,
+          );
+        }
       }
     });
   }
@@ -1365,79 +1656,256 @@ class _CompletionScreenState extends State<_CompletionScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final totalXp = appState.xp;
+    final streakDays = appState.streakDays;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(Spacing.xl),
+      padding: const EdgeInsets.all(Spacing.md),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: ControlSizes.contentMaxWidth,
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Check badge
+              // Run Complete Banner
               Container(
-                width: AvatarSizes.hero,
-                height: AvatarSizes.hero,
+                key: const Key('runCompleteBanner'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.m,
+                  vertical: Spacing.xs,
+                ),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  borderRadius: BorderRadius.circular(Radii.hero),
+                  color: AppColors.successBg,
+                  borderRadius: BorderRadius.circular(Radii.chip),
+                  border: Border.all(color: AppColors.secondary),
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: AppColors.onSecondary,
-                  size: IconSizes.lg * 2,
-                ),
-              ),
-              const SizedBox(height: Spacing.md),
-
-              // Ada avatar cheering
-              const AvatarView(
-                assetPath: 'assets/images/ada.png',
-                size: AvatarSizes.card,
-              ),
-              const SizedBox(height: Spacing.s),
-
-              const Text(
-                'Excellent!',
-                style: TextStyle(
-                  fontSize: TypeScale.headline,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  fontFamily: 'NotoSans',
-                ),
-              ),
-              const SizedBox(height: Spacing.xs),
-
-              // XP count-up
-              if (!widget.isReplay)
-                TweenAnimationBuilder<int>(
-                  tween: IntTween(begin: 0, end: totalXp),
-                  duration: kMedAnim,
-                  builder: (context, value, child) {
-                    return Text(
-                      '$value XP',
-                      style: const TextStyle(
-                        fontSize: TypeScale.headline,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.emoji_events,
+                      size: IconSizes.s,
+                      color: AppColors.secondary,
+                    ),
+                    SizedBox(width: Spacing.xs),
+                    Text(
+                      'Run Conquered!',
+                      style: TextStyle(
+                        fontSize: TypeScale.caption,
                         fontWeight: FontWeight.bold,
                         color: AppColors.secondary,
                         fontFamily: 'NotoSans',
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              if (widget.isReplay)
-                const Text(
-                  'Practice complete',
-                  style: TextStyle(
-                    fontSize: TypeScale.body,
-                    color: AppColors.textSecondary,
-                    fontFamily: 'NotoSans',
-                  ),
-                ),
+              ),
+              const SizedBox(height: Spacing.s),
 
-              const SizedBox(height: Spacing.lg),
+              // Ada avatar + Excellent! header row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const AvatarView(
+                    assetPath: 'assets/images/ada.png',
+                    size: AvatarSizes.chat,
+                  ),
+                  const SizedBox(width: Spacing.m),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Excellent!',
+                        style: TextStyle(
+                          fontSize: TypeScale.title,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                          fontFamily: 'NotoSans',
+                        ),
+                      ),
+                      if (!widget.isReplay)
+                        TweenAnimationBuilder<int>(
+                          tween: IntTween(begin: 0, end: totalXp),
+                          duration: kMedAnim,
+                          builder: (context, value, child) {
+                            return Text(
+                              '$value XP',
+                              style: const TextStyle(
+                                fontSize: TypeScale.body,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.secondary,
+                                fontFamily: 'NotoSans',
+                              ),
+                            );
+                          },
+                        ),
+                      if (widget.isReplay)
+                        const Text(
+                          'Practice complete',
+                          style: TextStyle(
+                            fontSize: TypeScale.bodySmall,
+                            color: AppColors.textSecondary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: Spacing.s),
+
+              // Run Stats Card
+              Container(
+                key: const Key('runStatsCard'),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.md,
+                  vertical: Spacing.s,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.warnBg,
+                  borderRadius: BorderRadius.circular(Radii.card),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Column(
+                      children: [
+                        const Text(
+                          'XP Earned',
+                          style: TextStyle(
+                            fontSize: TypeScale.caption,
+                            color: AppColors.textSecondary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.xs),
+                        Text(
+                          '+${widget.earnedXp} XP',
+                          style: const TextStyle(
+                            fontSize: TypeScale.body,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.secondary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        const Text(
+                          'Accuracy',
+                          style: TextStyle(
+                            fontSize: TypeScale.caption,
+                            color: AppColors.textSecondary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.xs),
+                        Text(
+                          widget.isReplay
+                              ? 'Practice Run'
+                              : (widget.isPerfect
+                                    ? 'Perfect Run'
+                                    : 'Completed'),
+                          style: const TextStyle(
+                            fontSize: TypeScale.body,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        const Text(
+                          'Streak',
+                          style: TextStyle(
+                            fontSize: TypeScale.caption,
+                            color: AppColors.textSecondary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.xs),
+                        Text(
+                          '$streakDays Day Streak',
+                          style: const TextStyle(
+                            fontSize: TypeScale.body,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: Spacing.s),
+
+              // Milestone Progress Bar
+              Container(
+                key: const Key('milestoneProgressBar'),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.md,
+                  vertical: Spacing.s,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(Radii.card),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.flag_outlined,
+                          size: IconSizes.s,
+                          color: AppColors.primary,
+                        ),
+                        SizedBox(width: Spacing.xs),
+                        Text(
+                          'Next Milestone: Unit Mastery',
+                          style: TextStyle(
+                            fontSize: TypeScale.caption,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Spacing.xs),
+                    Container(
+                      height: ControlSizes.progressBarS,
+                      decoration: BoxDecoration(
+                        color: AppColors.background,
+                        borderRadius: BorderRadius.circular(Radii.chip),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 0.75,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(Radii.chip),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: Spacing.md),
 
               // Continue button
               FlatButton(
