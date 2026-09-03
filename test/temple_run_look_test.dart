@@ -8,6 +8,7 @@ import 'package:igboman/models/progress.dart';
 import 'package:igboman/screens/home_screen.dart';
 import 'package:igboman/screens/lesson_screen.dart';
 import 'package:igboman/state/app_state.dart';
+import 'package:igboman/theme/app_theme.dart';
 import 'package:igboman/widgets/streak_celebration.dart';
 import 'package:igboman/widgets/streak_chip.dart';
 
@@ -43,6 +44,74 @@ const _runLesson = Lesson(
     ),
   ],
 );
+
+const _twoQuestionLesson = Lesson(
+  id: 'test_run_002',
+  title: 'Run Test Two',
+  skipIntro: true,
+  questions: [
+    LessonQuestion(
+      id: 'q1',
+      type: QuestionType.mcqIgboToEnglish,
+      prompt: 'Select "Water"',
+      options: ['Mmiri', 'Oku'],
+      answer: 'Mmiri',
+      acceptedAnswers: ['Mmiri'],
+    ),
+    LessonQuestion(
+      id: 'q2',
+      type: QuestionType.mcqIgboToEnglish,
+      prompt: 'Select "Fire"',
+      options: ['Oku', 'Mmiri'],
+      answer: 'Oku',
+      acceptedAnswers: ['Oku'],
+    ),
+  ],
+);
+
+bool _containsEmoji(String value) {
+  for (final rune in value.runes) {
+    if ((rune >= 0x1F300 && rune <= 0x1FAFF) ||
+        (rune >= 0x1F000 && rune <= 0x1F2FF) ||
+        (rune >= 0x1F1E6 && rune <= 0x1F1FF) ||
+        (rune >= 0x2600 && rune <= 0x27BF) ||
+        (rune >= 0x2B00 && rune <= 0x2BFF) ||
+        rune == 0xFE0F) {
+      return true;
+    }
+  }
+  return false;
+}
+
+String? _textOf(Text text) {
+  if (text.data != null) return text.data;
+  final span = text.textSpan;
+  if (span == null) return null;
+  final buffer = StringBuffer();
+  void visit(InlineSpan s) {
+    if (s is TextSpan) {
+      if (s.text != null) buffer.write(s.text);
+      final children = s.children;
+      if (children != null) {
+        for (final child in children) {
+          visit(child);
+        }
+      }
+    }
+  }
+
+  visit(span);
+  return buffer.toString();
+}
+
+List<String> _emojiStrings(WidgetTester tester) {
+  final bad = <String>[];
+  for (final text in tester.widgetList<Text>(find.byType(Text))) {
+    final value = _textOf(text);
+    if (value != null && _containsEmoji(value)) bad.add(value);
+  }
+  return bad;
+}
 
 void main() {
   setUp(() {
@@ -179,6 +248,128 @@ void main() {
       expect(find.byKey(const Key('streakMomentumFooter')), findsOneWidget);
       expect(find.byKey(const Key('streakCalendarStrip')), findsOneWidget);
       expect(find.text('Streak Details'), findsOneWidget);
+    });
+  });
+
+  group('No-emoji UI', () {
+    testWidgets('home journey shows icons and no emoji codepoints', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 4200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrapHome(_freshState()));
+      await tester.pump();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('journeyHeader')),
+          matching: find.byIcon(Icons.directions_run),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('currentRunBadge')),
+          matching: find.byIcon(Icons.directions_run),
+        ),
+        findsOneWidget,
+      );
+      expect(_emojiStrings(tester), isEmpty);
+    });
+
+    testWidgets('lesson, chips and celebration show no emoji codepoints', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(const LessonScreen(lesson: _runLesson)));
+      await tester.pumpAndSettle();
+      expect(_emojiStrings(tester), isEmpty);
+
+      final appState = AppState(
+        initial: ProgressData(streakDays: 4, lastActiveDay: DateTime.now()),
+      );
+      await tester.pumpWidget(_wrap(const StreakChip(), appState));
+      await tester.pump();
+      await tester.tap(find.byType(StreakChip));
+      await tester.pumpAndSettle();
+      expect(_emojiStrings(tester), isEmpty);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: StreakCelebrationDialog(streakDays: 6, isRestored: true),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(_emojiStrings(tester), isEmpty);
+    });
+  });
+
+  group('Trail continuity', () {
+    testWidgets('one connector per gap and none past the last realm', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 4200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrapHome(_freshState()));
+      await tester.pump();
+
+      for (var i = 1; i <= 12; i++) {
+        expect(
+          find.byKey(Key('trailSegment_$i')),
+          findsOneWidget,
+          reason: 'missing trail connector $i',
+        );
+      }
+      expect(find.byKey(const Key('trailSegment_0')), findsNothing);
+      expect(find.byKey(const Key('trailSegment_13')), findsNothing);
+    });
+
+    testWidgets('journey banner uses the green vertical gradient', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrapHome(_freshState()));
+      await tester.pump();
+
+      final header = tester.widget<Container>(
+        find.byKey(const Key('journeyHeader')),
+      );
+      final decoration = header.decoration! as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
+      expect(gradient.begin, Alignment.topCenter);
+      expect(gradient.end, Alignment.bottomCenter);
+      expect(gradient.colors, [AppColors.secondary, AppColors.secondaryDeep]);
+    });
+  });
+
+  group('Question micro-transition', () {
+    testWidgets('passing a question keeps chrome stable and swaps content', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(const LessonScreen(lesson: _twoQuestionLesson)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select "Water"'), findsOneWidget);
+      expect(find.byKey(const Key('lessonRunTrack')), findsOneWidget);
+
+      await tester.tap(find.text('Mmiri'));
+      await tester.pump();
+      await tester.tap(find.text('Check'));
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select "Fire"'), findsOneWidget);
+      expect(find.text('Select "Water"'), findsNothing);
+      expect(find.text('Run Test Two'), findsOneWidget);
+      expect(find.byKey(const Key('lessonRunTrack')), findsOneWidget);
+      expect(find.byKey(const Key('runQuestionEntrance')), findsOneWidget);
     });
   });
 }

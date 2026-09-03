@@ -467,9 +467,14 @@ class _FlatProgressBar extends StatelessWidget {
 // Question page dispatcher
 // ---------------------------------------------------------------------------
 
-/// One-shot slide and fade entrance for each question. Unlike an
-/// AnimatedSwitcher, the outgoing page is never kept alive, so each action
-/// button exists exactly once in the tree.
+/// One-shot micro-transition for each question: a short fade with a small
+/// upward rise and a subtle settle from 0.97 scale, over 280ms ease-out.
+/// Mirrors the vens-hub list micro-transition feel (fade plus a small rise,
+/// no full-screen swoop). Only the question body animates: the lesson app
+/// bar and the run progress bar live outside this widget in the Scaffold
+/// and stay put while questions pass. Unlike an AnimatedSwitcher, the
+/// outgoing page is never kept alive, so each action button exists exactly
+/// once in the tree.
 class _QuestionEntrance extends StatefulWidget {
   const _QuestionEntrance({super.key, required this.child});
 
@@ -482,19 +487,24 @@ class _QuestionEntrance extends StatefulWidget {
 class _QuestionEntranceState extends State<_QuestionEntrance>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<Offset> _slide;
+  late final Animation<Offset> _rise;
   late final Animation<double> _fade;
+  late final Animation<double> _settle;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: kMedAnim);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
     final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _slide = Tween<Offset>(
-      begin: const Offset(0.25, 0),
+    _rise = Tween<Offset>(
+      begin: const Offset(0, 0.03),
       end: Offset.zero,
     ).animate(curve);
     _fade = curve;
+    _settle = Tween<double>(begin: 0.97, end: 1).animate(curve);
     _controller.forward();
   }
 
@@ -515,8 +525,11 @@ class _QuestionEntranceState extends State<_QuestionEntrance>
   @override
   Widget build(BuildContext context) {
     return SlideTransition(
-      position: _slide,
-      child: FadeTransition(opacity: _fade, child: widget.child),
+      position: _rise,
+      child: FadeTransition(
+        opacity: _fade,
+        child: ScaleTransition(scale: _settle, child: widget.child),
+      ),
     );
   }
 }
@@ -850,7 +863,11 @@ class _QuestionPageState extends State<_QuestionPage>
       ),
       child: Row(
         children: [
-          const Text('🏃', style: TextStyle(fontSize: TypeScale.bodySmall)),
+          const Icon(
+            Icons.directions_run,
+            size: IconSizes.s,
+            color: AppColors.primary,
+          ),
           const SizedBox(width: Spacing.xs),
           Text(
             'Q${widget.questionNumber} of ${widget.totalQuestions}',
@@ -872,14 +889,25 @@ class _QuestionPageState extends State<_QuestionPage>
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(Radii.chip),
               ),
-              child: Text(
-                '🔥 Heat x$combo',
-                style: const TextStyle(
-                  fontSize: TypeScale.caption,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onPrimary,
-                  fontFamily: 'NotoSans',
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.local_fire_department,
+                    size: IconSizes.s,
+                    color: AppColors.onPrimary,
+                  ),
+                  const SizedBox(width: Spacing.xs),
+                  Text(
+                    'Heat x$combo',
+                    style: const TextStyle(
+                      fontSize: TypeScale.caption,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onPrimary,
+                      fontFamily: 'NotoSans',
+                    ),
+                  ),
+                ],
               ),
             )
           else

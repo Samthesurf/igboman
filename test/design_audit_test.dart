@@ -26,9 +26,10 @@ import 'package:flutter_test/flutter_test.dart';
 // TEMPLE-RUN-LOOK EXEMPTION (this branch only):
 //   Relaxed: rule 1 (gradients) and rule 2 (shadows), scoped to
 //   _gameLookFiles. Why: the flat-only look felt static for an adventurous
-//   winding-path journey UI, so shallow brown/green/cream gradients plus
-//   soft shadows add trail depth, current-position emphasis, momentum HUD
-//   lift, and bolder streak celebrations while staying in the palette.
+//   winding-path journey UI, so shallow predominantly-green and cream
+//   gradients plus soft shadows add trail depth, current-position emphasis,
+//   momentum HUD lift, and bolder streak celebrations while staying in the
+//   brown/green/cream palette.
 //   Removed: the old unit-path connector centering allowlist entry, because
 //   _UnitConnector was replaced by the token-clean _TrailSegment painter.
 //   Still enforced everywhere, game files included: the 4px grid, radii,

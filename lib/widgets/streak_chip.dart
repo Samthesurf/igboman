@@ -69,7 +69,11 @@ class StreakChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🔥', style: TextStyle(fontSize: 16)),
+            const Icon(
+              Icons.local_fire_department,
+              size: IconSizes.s,
+              color: AppColors.secondary,
+            ),
             const SizedBox(width: 4),
             Text(
               '$value',
@@ -133,9 +137,9 @@ class StreakDetailsSheet extends StatelessWidget {
               padding: const EdgeInsets.all(Spacing.md),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.primary, AppColors.secondary],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.secondary, AppColors.secondaryDeep],
                 ),
                 borderRadius: BorderRadius.circular(Radii.card),
                 boxShadow: const [
@@ -157,9 +161,10 @@ class StreakDetailsSheet extends StatelessWidget {
                       border: Border.all(color: AppColors.surface, width: 2),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      '🔥',
-                      style: TextStyle(fontSize: TypeScale.display),
+                    child: const Icon(
+                      Icons.local_fire_department,
+                      size: IconSizes.lg,
+                      color: AppColors.warnBg,
                     ),
                   ),
                   const SizedBox(width: Spacing.m),

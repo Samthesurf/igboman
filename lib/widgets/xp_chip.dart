@@ -26,7 +26,7 @@ class XpChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('⚡', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.bolt, size: IconSizes.s, color: AppColors.primary),
           const SizedBox(width: 4),
           Text(
             '$value',

@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 abstract final class AppColors {
   static const Color primary = Color(0xFFA9744F);
   static const Color secondary = Color(0xFF008751);
+
+  /// Deep green used as the lower stop of predominantly-green gradients
+  /// (journey banner, streak badges). Keeps the brown/green/cream scheme
+  /// while letting green lead.
+  static const Color secondaryDeep = Color(0xFF006B41);
   static const Color background = Color(0xFFFBF6EF);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color onPrimary = Color(0xFFFFFFFF);
@@ -14,7 +19,9 @@ abstract final class AppColors {
   static const Color cardBorder = Color(0xFFE8DFD5);
 
   // Feedback and state tokens (v3 design system)
-  static const Color error = Color(0xFFC75B39); // flat terracotta for wrong answers
+  static const Color error = Color(
+    0xFFC75B39,
+  ); // flat terracotta for wrong answers
   static const Color successBg = Color(0xFFEAF3EE); // light green tint
   static const Color warnBg = Color(0xFFF6EDE3); // light brown tint
   static const Color disabledFill = Color(0xFFE8DFD5);
@@ -54,15 +61,42 @@ ThemeData buildAppTheme() {
       ),
     ),
     textTheme: const TextTheme(
-      headlineLarge: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      headlineMedium: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      headlineSmall: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      titleLarge: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      titleMedium: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      titleSmall: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      bodyLarge: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      bodyMedium: TextStyle(color: AppColors.textPrimary, fontFamily: 'NotoSans'),
-      bodySmall: TextStyle(color: AppColors.textSecondary, fontFamily: 'NotoSans'),
+      headlineLarge: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      headlineMedium: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      headlineSmall: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      titleLarge: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      titleMedium: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      titleSmall: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      bodyLarge: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      bodyMedium: TextStyle(
+        color: AppColors.textPrimary,
+        fontFamily: 'NotoSans',
+      ),
+      bodySmall: TextStyle(
+        color: AppColors.textSecondary,
+        fontFamily: 'NotoSans',
+      ),
     ),
   );
 }

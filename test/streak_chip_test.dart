@@ -28,7 +28,7 @@ void main() {
       await tester.pumpWidget(_wrap(const StreakChip(streak: 7)));
       await tester.pump();
 
-      expect(find.text('🔥'), findsOneWidget);
+      expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
     });
 

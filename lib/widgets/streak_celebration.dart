@@ -194,9 +194,9 @@ class StreakCelebrationDialog extends StatelessWidget {
                   height: AvatarSizes.hero,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.primary, AppColors.secondary],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [AppColors.secondary, AppColors.secondaryDeep],
                     ),
                     borderRadius: BorderRadius.circular(Radii.hero),
                     border: Border.all(color: AppColors.warnBg, width: 2),
@@ -209,9 +209,10 @@ class StreakCelebrationDialog extends StatelessWidget {
                     ],
                   ),
                   alignment: Alignment.center,
-                  child: const Text(
-                    '🔥',
-                    style: TextStyle(fontSize: TypeScale.display),
+                  child: const Icon(
+                    Icons.local_fire_department,
+                    size: IconSizes.lg,
+                    color: AppColors.warnBg,
                   ),
                 ),
                 const SizedBox(height: Spacing.md),
