@@ -699,7 +699,10 @@ class _UnitCard extends StatelessWidget {
               children: [
                 if (isCurrent)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: Spacing.s),
+                    padding: const EdgeInsets.only(
+                      left: ControlSizes.chipHeight + Spacing.m,
+                      bottom: Spacing.s,
+                    ),
                     child: Container(
                       key: const Key('currentRunBadge'),
                       padding: const EdgeInsets.symmetric(
@@ -733,11 +736,17 @@ class _UnitCard extends StatelessWidget {
                     ),
                   ),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _UnitBadge(
-                      number: unit.id,
-                      locked: locked,
-                      completed: completed,
+                    SizedBox(
+                      height: ControlSizes.minTouchTarget,
+                      child: Center(
+                        child: _UnitBadge(
+                          number: unit.id,
+                          locked: locked,
+                          completed: completed,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: Spacing.m),
                     Expanded(
