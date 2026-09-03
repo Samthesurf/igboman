@@ -666,184 +666,199 @@ class _UnitCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: isCurrent
-              ? const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppColors.surface, AppColors.warnBg],
-                )
-              : null,
-          color: isCurrent ? null : AppColors.surface,
-          borderRadius: BorderRadius.circular(Radii.card),
-          border: Border.all(
-            color: isCurrent ? AppColors.primary : AppColors.cardBorder,
-            width: isCurrent ? 2 : 1,
-          ),
-          boxShadow: isCurrent
-              ? const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(Radii.card),
-          child: Padding(
-            padding: const EdgeInsets.all(Spacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isCurrent)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: ControlSizes.chipHeight + Spacing.m,
-                      bottom: Spacing.s,
-                    ),
-                    child: Container(
-                      key: const Key('currentRunBadge'),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.s,
-                        vertical: Spacing.xs,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: isCurrent
+                  ? const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [AppColors.surface, AppColors.warnBg],
+                    )
+                  : null,
+              color: isCurrent ? null : AppColors.surface,
+              borderRadius: BorderRadius.circular(Radii.card),
+              border: Border.all(
+                color: isCurrent ? AppColors.primary : AppColors.cardBorder,
+                width: isCurrent ? 2 : 1,
+              ),
+              boxShadow: isCurrent
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(Radii.chip),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.directions_run,
-                            size: IconSizes.s,
-                            color: AppColors.onPrimary,
-                          ),
-                          SizedBox(width: Spacing.xs),
-                          Text(
-                            'YOU ARE HERE',
-                            style: TextStyle(
-                              fontSize: TypeScale.caption,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.onPrimary,
-                              fontFamily: 'NotoSans',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                    ]
+                  : null,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(Radii.card),
+              child: Padding(
+                padding: const EdgeInsets.all(Spacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(
-                      height: ControlSizes.minTouchTarget,
-                      child: Center(
-                        child: _UnitBadge(
-                          number: unit.id,
-                          locked: locked,
-                          completed: completed,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: Spacing.m),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            unit.titleIgbo,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: TypeScale.title,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                              fontFamily: 'NotoSans',
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: ControlSizes.minTouchTarget,
+                          child: Center(
+                            child: _UnitBadge(
+                              number: unit.id,
+                              locked: locked,
+                              completed: completed,
                             ),
                           ),
-                          const SizedBox(height: Spacing.xs),
-                          Text(
-                            unit.titleEn,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: TypeScale.bodySmall,
-                              color: AppColors.textSecondary,
-                              fontFamily: 'NotoSans',
-                            ),
-                          ),
-                          const SizedBox(height: Spacing.s),
-                          _ProgressBar(fraction: progressFraction),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: Spacing.m),
-                    if (locked)
-                      const SizedBox(
-                        width: ControlSizes.minTouchTarget,
-                        height: ControlSizes.minTouchTarget,
-                        child: Icon(
-                          Icons.lock,
-                          size: IconSizes.md,
-                          color: AppColors.disabledText,
                         ),
-                      )
-                    else
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: onTap,
-                            behavior: HitTestBehavior.opaque,
-                            child: Container(
-                              width: ControlSizes.minTouchTarget,
-                              height: ControlSizes.minTouchTarget,
-                              decoration: BoxDecoration(
-                                color: AppColors.successBg,
-                                borderRadius: BorderRadius.circular(
-                                  Radii.button,
+                        const SizedBox(width: Spacing.m),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                unit.titleIgbo,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: TypeScale.title,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                  fontFamily: 'NotoSans',
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.play_arrow,
-                                size: IconSizes.md,
-                                color: AppColors.secondary,
+                              const SizedBox(height: Spacing.xs),
+                              Text(
+                                unit.titleEn,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: TypeScale.bodySmall,
+                                  color: AppColors.textSecondary,
+                                  fontFamily: 'NotoSans',
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: Spacing.s),
+                              _ProgressBar(fraction: progressFraction),
+                            ],
                           ),
-                          if (completed && onQuizTap != null) ...[
-                            const SizedBox(width: Spacing.s),
-                            GestureDetector(
-                              key: Key('unitQuizButton_${unit.id}'),
-                              onTap: onQuizTap,
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                width: ControlSizes.minTouchTarget,
-                                height: ControlSizes.minTouchTarget,
-                                decoration: BoxDecoration(
-                                  color: AppColors.warnBg,
-                                  borderRadius: BorderRadius.circular(
-                                    Radii.button,
+                        ),
+                        const SizedBox(width: Spacing.m),
+                        if (locked)
+                          const SizedBox(
+                            width: ControlSizes.minTouchTarget,
+                            height: ControlSizes.minTouchTarget,
+                            child: Icon(
+                              Icons.lock,
+                              size: IconSizes.md,
+                              color: AppColors.disabledText,
+                            ),
+                          )
+                        else
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: onTap,
+                                behavior: HitTestBehavior.opaque,
+                                child: Container(
+                                  width: ControlSizes.minTouchTarget,
+                                  height: ControlSizes.minTouchTarget,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.successBg,
+                                    borderRadius: BorderRadius.circular(
+                                      Radii.button,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow,
+                                    size: IconSizes.md,
+                                    color: AppColors.secondary,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.quiz_outlined,
-                                  size: IconSizes.md,
-                                  color: AppColors.primary,
-                                ),
                               ),
-                            ),
-                          ],
-                        ],
-                      ),
+                              if (completed && onQuizTap != null) ...[
+                                const SizedBox(width: Spacing.s),
+                                GestureDetector(
+                                  key: Key('unitQuizButton_${unit.id}'),
+                                  onTap: onQuizTap,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    width: ControlSizes.minTouchTarget,
+                                    height: ControlSizes.minTouchTarget,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.warnBg,
+                                      borderRadius: BorderRadius.circular(
+                                        Radii.button,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.quiz_outlined,
+                                      size: IconSizes.md,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+          if (isCurrent)
+            const Positioned(
+              top: -Spacing.m,
+              left: Spacing.md + ControlSizes.chipHeight + Spacing.m,
+              child: _CurrentRunBadge(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Floating "you are here" tag straddling the current unit card's top
+/// border, so the lesson row can sit at the card's vertical center.
+class _CurrentRunBadge extends StatelessWidget {
+  const _CurrentRunBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('currentRunBadge'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.s,
+        vertical: Spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(Radii.chip),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.directions_run,
+            size: IconSizes.s,
+            color: AppColors.onPrimary,
+          ),
+          SizedBox(width: Spacing.xs),
+          Text(
+            'YOU ARE HERE',
+            style: TextStyle(
+              fontSize: TypeScale.caption,
+              fontWeight: FontWeight.bold,
+              color: AppColors.onPrimary,
+              fontFamily: 'NotoSans',
+            ),
+          ),
+        ],
       ),
     );
   }
