@@ -1876,315 +1876,341 @@ class _CompletionScreenState extends State<_CompletionScreen> {
 
     return Stack(
       children: [
-        SingleChildScrollView(
-          padding: const EdgeInsets.all(Spacing.md),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: ControlSizes.contentMaxWidth,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Ada avatar + Excellent! header row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const AvatarView(
-                        assetPath: 'assets/images/ada.jpg',
-                        size: AvatarSizes.chat,
-                      ),
-                      const SizedBox(width: Spacing.m),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Excellent!',
-                            style: TextStyle(
-                              fontSize: TypeScale.title,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                              fontFamily: 'NotoSans',
-                            ),
-                          ),
-                          if (!widget.isReplay)
-                            TweenAnimationBuilder<int>(
-                              tween: IntTween(begin: 0, end: totalXp),
-                              duration: kMedAnim,
-                              builder: (context, value, child) {
-                                return Text(
-                                  '$value XP',
-                                  style: const TextStyle(
-                                    fontSize: TypeScale.body,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.secondary,
-                                    fontFamily: 'NotoSans',
-                                  ),
-                                );
-                              },
-                            ),
-                          if (widget.isReplay)
-                            const Text(
-                              'Practice complete',
-                              style: TextStyle(
-                                fontSize: TypeScale.bodySmall,
-                                color: AppColors.textSecondary,
-                                fontFamily: 'NotoSans',
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
+        LayoutBuilder(
+          builder: (context, viewport) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(Spacing.md),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: ControlSizes.contentMaxWidth,
+                    // Fill the viewport so the action buttons can anchor
+                    // to the bottom via the Spacer below.
+                    minHeight: viewport.maxHeight - Spacing.md * 2,
                   ),
-
-                  const SizedBox(height: Spacing.m),
-
-                  // Coach comment: a random roster character reacts to the
-                  // run, streaming the line from a speech bubble.
-                  CoachCommentView(comment: _comment),
-
-                  const SizedBox(height: Spacing.s),
-
-                  // Celebration props: small Igbo illustrations cheering
-                  // with the learner on the results screen.
-                  const Row(
-                    key: Key('celebrationProps'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      PropSpot(name: 'lion', size: AvatarSizes.chat),
-                      SizedBox(width: Spacing.m),
-                      PropSpot(name: 'ogene', size: AvatarSizes.chat),
-                      SizedBox(width: Spacing.m),
-                      PropSpot(name: 'yam', size: AvatarSizes.chat),
-                    ],
-                  ),
-
-                  const SizedBox(height: Spacing.s),
-
-                  // Run Stats Card
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.92, end: 1.0),
-                    duration: kMedAnim,
-                    builder: (context, value, child) {
-                      return Transform.scale(scale: value, child: child);
-                    },
-                    child: Container(
-                      key: const Key('runStatsCard'),
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.md,
-                        vertical: Spacing.s,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.warnBg,
-                        borderRadius: BorderRadius.circular(Radii.card),
-                        border: Border.all(color: AppColors.cardBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Ada avatar + Excellent! header row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const AvatarView(
+                              assetPath: 'assets/images/ada.jpg',
+                              size: AvatarSizes.chat,
+                            ),
+                            const SizedBox(width: Spacing.m),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'XP Earned',
+                                  'Excellent!',
                                   style: TextStyle(
-                                    fontSize: TypeScale.caption,
-                                    color: AppColors.textSecondary,
+                                    fontSize: TypeScale.title,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
                                     fontFamily: 'NotoSans',
                                   ),
                                 ),
-                                const SizedBox(height: Spacing.xs),
-                                Text(
-                                  '+${widget.earnedXp} XP',
-                                  style: const TextStyle(
-                                    fontSize: TypeScale.body,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.secondary,
-                                    fontFamily: 'NotoSans',
+                                if (!widget.isReplay)
+                                  TweenAnimationBuilder<int>(
+                                    tween: IntTween(begin: 0, end: totalXp),
+                                    duration: kMedAnim,
+                                    builder: (context, value, child) {
+                                      return Text(
+                                        '$value XP',
+                                        style: const TextStyle(
+                                          fontSize: TypeScale.body,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.secondary,
+                                          fontFamily: 'NotoSans',
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                if (widget.isReplay)
+                                  const Text(
+                                    'Practice complete',
+                                    style: TextStyle(
+                                      fontSize: TypeScale.bodySmall,
+                                      color: AppColors.textSecondary,
+                                      fontFamily: 'NotoSans',
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+
+                        const Spacer(flex: 1),
+
+                        // Coach comment: a random roster character reacts to the
+                        // run, streaming the line from a speech bubble.
+                        CoachCommentView(comment: _comment),
+
+                        const SizedBox(height: Spacing.s),
+
+                        // Celebration props: small Igbo illustrations cheering
+                        // with the learner on the results screen.
+                        const Row(
+                          key: Key('celebrationProps'),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            PropSpot(name: 'lion', size: AvatarSizes.chat),
+                            SizedBox(width: Spacing.m),
+                            PropSpot(name: 'ogene', size: AvatarSizes.chat),
+                            SizedBox(width: Spacing.m),
+                            PropSpot(name: 'yam', size: AvatarSizes.chat),
+                          ],
+                        ),
+
+                        const Spacer(flex: 1),
+
+                        // Run Stats Card
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.92, end: 1.0),
+                          duration: kMedAnim,
+                          builder: (context, value, child) {
+                            return Transform.scale(scale: value, child: child);
+                          },
+                          child: Container(
+                            key: const Key('runStatsCard'),
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.md,
+                              vertical: Spacing.s,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.warnBg,
+                              borderRadius: BorderRadius.circular(Radii.card),
+                              border: Border.all(color: AppColors.cardBorder),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    children: [
+                                      const Text(
+                                        'XP Earned',
+                                        style: TextStyle(
+                                          fontSize: TypeScale.caption,
+                                          color: AppColors.textSecondary,
+                                          fontFamily: 'NotoSans',
+                                        ),
+                                      ),
+                                      const SizedBox(height: Spacing.xs),
+                                      Text(
+                                        '+${widget.earnedXp} XP',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: TypeScale.body,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.secondary,
+                                          fontFamily: 'NotoSans',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 3,
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: AppColors.cardBorder,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          'Accuracy',
+                                          style: TextStyle(
+                                            fontSize: TypeScale.caption,
+                                            color: AppColors.textSecondary,
+                                            fontFamily: 'NotoSans',
+                                          ),
+                                        ),
+                                        const SizedBox(height: Spacing.xs),
+                                        Text(
+                                          widget.isReplay
+                                              ? 'Practice Run'
+                                              : (widget.isPerfect
+                                                    ? 'Perfect'
+                                                    : 'Completed'),
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontSize: TypeScale.body,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                            fontFamily: 'NotoSans',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(
+                                          color: AppColors.cardBorder,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          'Streak',
+                                          style: TextStyle(
+                                            fontSize: TypeScale.caption,
+                                            color: AppColors.textSecondary,
+                                            fontFamily: 'NotoSans',
+                                          ),
+                                        ),
+                                        const SizedBox(height: Spacing.xs),
+                                        Row(
+                                          key: const Key('streakStatValue'),
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              '$streakDays',
+                                              style: const TextStyle(
+                                                fontSize: TypeScale.body,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                                fontFamily: 'NotoSans',
+                                              ),
+                                            ),
+                                            const SizedBox(width: Spacing.xs),
+                                            const Icon(
+                                              Icons.local_fire_department,
+                                              size: IconSizes.s,
+                                              color: AppColors.ember,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Expanded(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  left: BorderSide(color: AppColors.cardBorder),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    'Accuracy',
-                                    style: TextStyle(
-                                      fontSize: TypeScale.caption,
-                                      color: AppColors.textSecondary,
-                                      fontFamily: 'NotoSans',
-                                    ),
-                                  ),
-                                  const SizedBox(height: Spacing.xs),
-                                  Text(
-                                    widget.isReplay
-                                        ? 'Practice Run'
-                                        : (widget.isPerfect
-                                              ? 'Perfect'
-                                              : 'Completed'),
-                                    style: const TextStyle(
-                                      fontSize: TypeScale.body,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                      fontFamily: 'NotoSans',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  left: BorderSide(color: AppColors.cardBorder),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    'Streak',
-                                    style: TextStyle(
-                                      fontSize: TypeScale.caption,
-                                      color: AppColors.textSecondary,
-                                      fontFamily: 'NotoSans',
-                                    ),
-                                  ),
-                                  const SizedBox(height: Spacing.xs),
-                                  Row(
-                                    key: const Key('streakStatValue'),
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '$streakDays',
-                                        style: const TextStyle(
-                                          fontSize: TypeScale.body,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                          fontFamily: 'NotoSans',
-                                        ),
-                                      ),
-                                      const SizedBox(width: Spacing.xs),
-                                      const Icon(
-                                        Icons.local_fire_department,
-                                        size: IconSizes.s,
-                                        color: AppColors.ember,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: Spacing.s),
-
-                  // Milestone Progress Bar
-                  Container(
-                    key: const Key('milestoneProgressBar'),
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.md,
-                      vertical: Spacing.s,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(Radii.card),
-                      border: Border.all(color: AppColors.cardBorder),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.flag_outlined,
-                              size: IconSizes.s,
-                              color: AppColors.primary,
-                            ),
-                            SizedBox(width: Spacing.xs),
-                            Text(
-                              'Next Milestone: Unit Mastery',
-                              style: TextStyle(
-                                fontSize: TypeScale.caption,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                                fontFamily: 'NotoSans',
-                              ),
-                            ),
-                          ],
                         ),
-                        const SizedBox(height: Spacing.xs),
+
+                        const SizedBox(height: Spacing.s),
+
+                        // Milestone Progress Bar
                         Container(
-                          height: ControlSizes.progressBarS,
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(Radii.chip),
+                          key: const Key('milestoneProgressBar'),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.md,
+                            vertical: Spacing.s,
                           ),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: 0.75,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(Radii.chip),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(Radii.card),
+                            border: Border.all(color: AppColors.cardBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(
+                                    Icons.flag_outlined,
+                                    size: IconSizes.s,
+                                    color: AppColors.primary,
+                                  ),
+                                  SizedBox(width: Spacing.xs),
+                                  Text(
+                                    'Next Milestone: Unit Mastery',
+                                    style: TextStyle(
+                                      fontSize: TypeScale.caption,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                      fontFamily: 'NotoSans',
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: Spacing.xs),
+                              Container(
+                                height: ControlSizes.progressBarS,
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(
+                                    Radii.chip,
+                                  ),
+                                ),
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: 0.75,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(
+                                        Radii.chip,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: Spacing.md),
+
+                        // Push the actions to the bottom of the viewport.
+                        const Spacer(flex: 1),
+
+                        // Continue button
+                        FlatButton(
+                          label: 'Continue',
+                          enabled: true,
+                          color: AppColors.secondary,
+                          onTap: widget.onContinue,
+                        ),
+                        const SizedBox(height: Spacing.s),
+
+                        // Practice again button
+                        FlatButton(
+                          label: 'Practice again',
+                          enabled: true,
+                          color: AppColors.primary,
+                          onTap: widget.onPracticeAgain,
+                        ),
+                        const SizedBox(height: Spacing.s),
+
+                        // Review answers button
+                        FlatButton(
+                          key: const Key('reviewButton'),
+                          label: 'Review answers',
+                          icon: Icons.fact_check,
+                          enabled: true,
+                          color: AppColors.primary,
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  _ReviewScreen(results: widget.results),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: Spacing.md),
-
-                  // Continue button
-                  FlatButton(
-                    label: 'Continue',
-                    enabled: true,
-                    color: AppColors.secondary,
-                    onTap: widget.onContinue,
-                  ),
-                  const SizedBox(height: Spacing.s),
-
-                  // Practice again button
-                  FlatButton(
-                    label: 'Practice again',
-                    enabled: true,
-                    color: AppColors.primary,
-                    onTap: widget.onPracticeAgain,
-                  ),
-                  const SizedBox(height: Spacing.s),
-
-                  // Review answers button
-                  FlatButton(
-                    key: const Key('reviewButton'),
-                    label: 'Review answers',
-                    icon: Icons.fact_check,
-                    enabled: true,
-                    color: AppColors.primary,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => _ReviewScreen(results: widget.results),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
         const Positioned.fill(
           key: Key('completionConfetti'),
