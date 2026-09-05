@@ -340,23 +340,23 @@ class _BottomNav extends StatelessWidget {
     return NavigationBar(
       elevation: 0,
       backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.warnBg,
+      indicatorColor: AppColors.primary,
       selectedIndex: selectedIndex,
       onDestinationSelected: onSelect,
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.menu_book_outlined),
-          selectedIcon: Icon(Icons.menu_book),
+          selectedIcon: Icon(Icons.menu_book, color: AppColors.onPrimary),
           label: 'Learn',
         ),
         NavigationDestination(
           icon: Icon(Icons.book_outlined),
-          selectedIcon: Icon(Icons.book),
+          selectedIcon: Icon(Icons.book, color: AppColors.onPrimary),
           label: 'Stories',
         ),
         NavigationDestination(
           icon: Icon(Icons.chat_bubble_outline),
-          selectedIcon: Icon(Icons.chat_bubble),
+          selectedIcon: Icon(Icons.chat_bubble, color: AppColors.onPrimary),
           label: 'Chat',
         ),
       ],
