@@ -8,6 +8,7 @@ import 'package:igboman/models/progress.dart';
 import 'package:igboman/screens/stories_screen.dart';
 import 'package:igboman/screens/story_screen.dart';
 import 'package:igboman/state/app_state.dart';
+import 'package:igboman/widgets/prop_spot.dart';
 import 'package:igboman/widgets/story_card.dart';
 
 // ---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ void main() {
     await tester.pumpWidget(_wrap(_stateThrough(4)));
     await tester.pump();
 
-    final unlocked = find.byIcon(Icons.menu_book);
+    final unlocked = find.byType(PropSpot);
     expect(unlocked, findsNWidgets(3));
     expect(find.byIcon(Icons.lock), findsNWidgets(stories.length - 3));
 

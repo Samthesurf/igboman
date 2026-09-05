@@ -14,6 +14,7 @@ import '../widgets/avatar_view.dart';
 import '../widgets/content_box.dart';
 import '../widgets/diacritic_bar.dart';
 import '../widgets/flat_button.dart';
+import '../widgets/prop_spot.dart';
 import '../widgets/streak_celebration.dart';
 
 // ---------------------------------------------------------------------------
@@ -1111,7 +1112,7 @@ class _QuestionPageState extends State<_QuestionPage>
           Row(
             children: [
               AvatarView(
-                assetPath: isCorrect ? 'assets/images/ada.png' : null,
+                assetPath: isCorrect ? 'assets/images/ada.jpg' : null,
                 size: AvatarSizes.card,
               ),
               const SizedBox(width: Spacing.m),
@@ -1930,7 +1931,7 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const AvatarView(
-                        assetPath: 'assets/images/ada.png',
+                        assetPath: 'assets/images/ada.jpg',
                         size: AvatarSizes.chat,
                       ),
                       const SizedBox(width: Spacing.m),
@@ -1973,6 +1974,22 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                             ),
                         ],
                       ),
+                    ],
+                  ),
+
+                  const SizedBox(height: Spacing.s),
+
+                  // Celebration props: small Igbo illustrations cheering
+                  // with the learner on the results screen.
+                  const Row(
+                    key: Key('celebrationProps'),
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      PropSpot(name: 'lion', size: AvatarSizes.chat),
+                      SizedBox(width: Spacing.m),
+                      PropSpot(name: 'ogene', size: AvatarSizes.chat),
+                      SizedBox(width: Spacing.m),
+                      PropSpot(name: 'yam', size: AvatarSizes.chat),
                     ],
                   ),
 

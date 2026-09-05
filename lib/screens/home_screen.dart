@@ -11,6 +11,7 @@ import '../theme/dimens.dart';
 import '../widgets/avatar_view.dart';
 import '../widgets/content_box.dart';
 import '../widgets/flat_button.dart';
+import '../widgets/prop_spot.dart';
 import '../widgets/streak_chip.dart';
 import '../widgets/xp_chip.dart';
 import 'chat_screen.dart';
@@ -172,6 +173,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ...pathItems,
                 const SizedBox(height: Spacing.xl),
                 const _StoriesCard(),
+                const SizedBox(height: Spacing.md),
+                const _CultureStrip(),
               ],
             ),
           ),
@@ -191,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const AvatarView(
-              assetPath: 'assets/images/ada.png',
+              assetPath: 'assets/images/ada.jpg',
               size: AvatarSizes.hero,
             ),
             const SizedBox(height: Spacing.md),
@@ -221,6 +224,18 @@ class _HomeScreenState extends State<HomeScreen> {
               enabled: true,
               color: AppColors.secondary,
               onTap: () => _openChat(context),
+            ),
+            const SizedBox(height: Spacing.lg),
+            const Row(
+              key: Key('chatProps'),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PropSpot(name: 'kolanut', size: AvatarSizes.mini),
+                SizedBox(width: Spacing.m),
+                PropSpot(name: 'palm', size: AvatarSizes.mini),
+                SizedBox(width: Spacing.m),
+                PropSpot(name: 'yam', size: AvatarSizes.mini),
+              ],
             ),
           ],
         ),
@@ -967,6 +982,27 @@ class _StoriesCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Village strip: a small row of Igbo prop illustrations that adds life
+/// to the bottom of the learn path.
+class _CultureStrip extends StatelessWidget {
+  const _CultureStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      key: Key('cultureStrip'),
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        PropSpot(name: 'yam', size: AvatarSizes.chat),
+        PropSpot(name: 'lion', size: AvatarSizes.chat),
+        PropSpot(name: 'palm', size: AvatarSizes.chat),
+        PropSpot(name: 'kolanut', size: AvatarSizes.chat),
+        PropSpot(name: 'ogene', size: AvatarSizes.chat),
+      ],
     );
   }
 }
