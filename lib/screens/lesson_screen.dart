@@ -582,7 +582,10 @@ class _QuestionPageState extends State<_QuestionPage>
     with SingleTickerProviderStateMixin {
   _AnswerState _answerState = _AnswerState.idle;
   late AnimationController _animController;
-  late Animation<double> _shakeAnim;
+  // Gentle opacity-only reveal for the feedback strip. Deliberately no
+  // positional motion: the chosen answer tile already carries the
+  // right/wrong signal via its tint, so moving the card adds noise.
+  late Animation<double> _feedbackFade;
 
   // Per-type state
   String? _selectedOption; // MCQ
@@ -601,11 +604,10 @@ class _QuestionPageState extends State<_QuestionPage>
     super.initState();
     _currentCombo = widget.initialCombo;
     _animController = AnimationController(vsync: this, duration: kFastAnim);
-    _shakeAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 8.0), weight: 25),
-      TweenSequenceItem(tween: Tween(begin: 8.0, end: -8.0), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: -8.0, end: 0.0), weight: 25),
-    ]).animate(_animController);
+    _feedbackFade = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
 
     // Rebuild when translate text changes so _canConfirm updates
     _translateController.addListener(_onTranslateTextChanged);
@@ -799,17 +801,19 @@ class _QuestionPageState extends State<_QuestionPage>
         _animController.forward(from: 0);
       }
     } else {
-      // Wrong pair: shake and deselect
+      // Wrong pair: flash the tapped tile terracotta briefly, no motion.
       _currentCombo = 0;
       _hadMistake = true;
       setState(() {
-        attempt.shaking = true;
+        attempt.missFlash = true;
         _selectedLeft = null;
       });
+      // Clearing off the feedback controller (rather than a raw timer) so
+      // widget tests settle with a normal pump.
       _animController.forward(from: 0).then((_) {
         if (mounted) {
           setState(() {
-            attempt.shaking = false;
+            attempt.missFlash = false;
           });
         }
       });
@@ -838,17 +842,7 @@ class _QuestionPageState extends State<_QuestionPage>
         _answerState == _AnswerState.correct ||
         _answerState == _AnswerState.correctToneNote;
 
-    return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, child) {
-        final offsetX = _answerState == _AnswerState.wrong
-            ? _shakeAnim.value
-            : 0.0;
-
-        return Transform.translate(offset: Offset(offsetX, 0), child: child);
-      },
-      child: _buildBody(isCorrect),
-    );
+    return _buildBody(isCorrect);
   }
 
   Widget _buildBody(bool isCorrect) {
@@ -1112,8 +1106,6 @@ class _QuestionPageState extends State<_QuestionPage>
           question: widget.question,
           pairAttempts: _pairAttempts,
           selectedLeft: _selectedLeft,
-          shakeAnim: _shakeAnim,
-          animController: _animController,
           onTapLeft: _tapLeft,
           onTapRight: _tapRight,
         );
@@ -1150,116 +1142,121 @@ class _QuestionPageState extends State<_QuestionPage>
 
   Widget _buildFeedbackStrip(bool isCorrect) {
     final isToneNote = _answerState == _AnswerState.correctToneNote;
-    return Container(
-      width: double.infinity,
-      color: isCorrect ? AppColors.successBg : AppColors.error.withAlpha(30),
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.s,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AvatarView(
-                assetPath: isCorrect ? 'assets/images/ada.jpg' : null,
-                size: AvatarSizes.card,
-              ),
-              const SizedBox(width: Spacing.m),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          isCorrect ? 'Correct!' : 'Not quite',
+    return FadeTransition(
+      opacity: _feedbackFade,
+      child: Container(
+        width: double.infinity,
+        color: isCorrect ? AppColors.successBg : AppColors.error.withAlpha(30),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.md,
+          vertical: Spacing.s,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AvatarView(
+                  assetPath: isCorrect
+                      ? 'assets/images/ada.jpg'
+                      : 'assets/images/ada_sad.jpg',
+                  size: AvatarSizes.card,
+                ),
+                const SizedBox(width: Spacing.m),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            isCorrect ? 'Correct!' : 'Not quite',
+                            style: TextStyle(
+                              fontSize: TypeScale.body,
+                              fontWeight: FontWeight.bold,
+                              color: isCorrect
+                                  ? AppColors.secondary
+                                  : AppColors.error,
+                              fontFamily: 'NotoSans',
+                            ),
+                          ),
+                          if (isCorrect && _currentCombo > 0) ...[
+                            const SizedBox(width: Spacing.s),
+                            Container(
+                              key: const Key('runComboBadge'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: Spacing.s,
+                                vertical: Spacing.xs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.warnBg,
+                                borderRadius: BorderRadius.circular(Radii.chip),
+                                border: Border.all(color: AppColors.primary),
+                              ),
+                              child: Text(
+                                'Combo x$_currentCombo',
+                                style: const TextStyle(
+                                  fontSize: TypeScale.caption,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontFamily: 'NotoSans',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (isToneNote)
+                        const Text(
+                          'Watch the tone marks',
                           style: TextStyle(
-                            fontSize: TypeScale.body,
-                            fontWeight: FontWeight.bold,
-                            color: isCorrect
-                                ? AppColors.secondary
-                                : AppColors.error,
+                            fontSize: TypeScale.bodySmall,
+                            color: AppColors.textSecondary,
                             fontFamily: 'NotoSans',
                           ),
                         ),
-                        if (isCorrect && _currentCombo > 0) ...[
-                          const SizedBox(width: Spacing.s),
-                          Container(
-                            key: const Key('runComboBadge'),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: Spacing.s,
-                              vertical: Spacing.xs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.warnBg,
-                              borderRadius: BorderRadius.circular(Radii.chip),
-                              border: Border.all(color: AppColors.primary),
-                            ),
-                            child: Text(
-                              'Combo x$_currentCombo',
-                              style: const TextStyle(
-                                fontSize: TypeScale.caption,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                                fontFamily: 'NotoSans',
-                              ),
-                            ),
+                      if (!isCorrect && _correctOption != null)
+                        Text(
+                          'Answer: $_correctOption',
+                          style: const TextStyle(
+                            fontSize: TypeScale.bodySmall,
+                            color: AppColors.textSecondary,
+                            fontFamily: 'NotoSans',
                           ),
-                        ],
-                      ],
-                    ),
-                    if (isToneNote)
-                      const Text(
-                        'Watch the tone marks',
-                        style: TextStyle(
-                          fontSize: TypeScale.bodySmall,
-                          color: AppColors.textSecondary,
-                          fontFamily: 'NotoSans',
                         ),
-                      ),
-                    if (!isCorrect && _correctOption != null)
-                      Text(
-                        'Answer: $_correctOption',
-                        style: const TextStyle(
-                          fontSize: TypeScale.bodySmall,
-                          color: AppColors.textSecondary,
-                          fontFamily: 'NotoSans',
-                        ),
-                      ),
-                  ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  isCorrect ? Icons.check_circle_outline : Icons.close,
+                  color: isCorrect ? AppColors.secondary : AppColors.error,
+                  size: IconSizes.lg,
+                ),
+              ],
+            ),
+            const SizedBox(height: Spacing.xs),
+            Container(
+              key: const Key('answerExplanation'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(Spacing.s),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(Radii.chip),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Text(
+                _getExplanation(widget.question, isCorrect),
+                style: const TextStyle(
+                  fontSize: TypeScale.caption,
+                  color: AppColors.textSecondary,
+                  fontFamily: 'NotoSans',
                 ),
               ),
-              Icon(
-                isCorrect ? Icons.check_circle_outline : Icons.close,
-                color: isCorrect ? AppColors.secondary : AppColors.error,
-                size: IconSizes.lg,
-              ),
-            ],
-          ),
-          const SizedBox(height: Spacing.xs),
-          Container(
-            key: const Key('answerExplanation'),
-            width: double.infinity,
-            padding: const EdgeInsets.all(Spacing.s),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(Radii.chip),
-              border: Border.all(color: AppColors.cardBorder),
             ),
-            child: Text(
-              _getExplanation(widget.question, isCorrect),
-              style: const TextStyle(
-                fontSize: TypeScale.caption,
-                color: AppColors.textSecondary,
-                fontFamily: 'NotoSans',
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1433,7 +1430,7 @@ class _PairAttempt {
   final String left;
   final String correctRight;
   bool matched = false;
-  bool shaking = false;
+  bool missFlash = false;
 
   _PairAttempt({required this.left, required this.correctRight});
 }
@@ -1443,8 +1440,6 @@ class _MatchPairsView extends StatelessWidget {
     required this.question,
     required this.pairAttempts,
     required this.selectedLeft,
-    required this.shakeAnim,
-    required this.animController,
     required this.onTapLeft,
     required this.onTapRight,
   });
@@ -1452,8 +1447,6 @@ class _MatchPairsView extends StatelessWidget {
   final LessonQuestion question;
   final List<_PairAttempt> pairAttempts;
   final String? selectedLeft;
-  final Animation<double> shakeAnim;
-  final AnimationController animController;
   final void Function(String) onTapLeft;
   final void Function(String) onTapRight;
 
@@ -1548,51 +1541,42 @@ class _MatchPairsView extends StatelessWidget {
                     orElse: () => _PairAttempt(left: '', correctRight: right),
                   );
                   final isMatched = attempt.matched;
-                  final isShaking = attempt.shaking;
+                  final isMiss = attempt.missFlash && !isMatched;
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: Spacing.s),
-                    child: AnimatedBuilder(
-                      animation: animController,
-                      builder: (context, child) {
-                        return Transform.translate(
-                          offset: Offset(isShaking ? shakeAnim.value : 0.0, 0),
-                          child: child,
-                        );
-                      },
-                      child: GestureDetector(
-                        onTap: isMatched ? null : () => onTapRight(right),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(Spacing.s),
-                          decoration: BoxDecoration(
+                    child: GestureDetector(
+                      onTap: isMatched ? null : () => onTapRight(right),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(Spacing.s),
+                        decoration: BoxDecoration(
+                          color: isMatched
+                              ? AppColors.successBg
+                              : isMiss
+                              ? AppColors.error.withAlpha(20)
+                              : AppColors.surface,
+                          borderRadius: BorderRadius.circular(Radii.card),
+                          border: Border.all(
                             color: isMatched
-                                ? AppColors.successBg
-                                : isShaking
-                                ? AppColors.error.withAlpha(20)
-                                : AppColors.surface,
-                            borderRadius: BorderRadius.circular(Radii.card),
-                            border: Border.all(
-                              color: isMatched
-                                  ? AppColors.secondary
-                                  : isShaking
-                                  ? AppColors.error
-                                  : AppColors.cardBorder,
-                            ),
+                                ? AppColors.secondary
+                                : isMiss
+                                ? AppColors.error
+                                : AppColors.cardBorder,
                           ),
-                          child: Text(
-                            right,
-                            style: TextStyle(
-                              fontSize: TypeScale.body,
-                              color: isMatched
-                                  ? AppColors.secondary
-                                  : isShaking
-                                  ? AppColors.error
-                                  : AppColors.textPrimary,
-                              fontFamily: 'NotoSans',
-                            ),
-                            textAlign: TextAlign.center,
+                        ),
+                        child: Text(
+                          right,
+                          style: TextStyle(
+                            fontSize: TypeScale.body,
+                            color: isMatched
+                                ? AppColors.secondary
+                                : isMiss
+                                ? AppColors.error
+                                : AppColors.textPrimary,
+                            fontFamily: 'NotoSans',
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
