@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/lesson.dart';
+import '../models/question_result.dart';
 import '../services/answer_checker.dart';
 import '../services/audio_service.dart';
 import '../services/lesson_intro.dart';
@@ -11,6 +12,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
 import '../widgets/avatar_view.dart';
+import '../widgets/coach_comment.dart';
 import '../widgets/content_box.dart';
 import '../widgets/diacritic_bar.dart';
 import '../widgets/flat_button.dart';
@@ -38,6 +40,9 @@ class _LessonScreenState extends State<LessonScreen> {
   bool _isReplay = false;
   bool _showIntro = true;
 
+  /// One record per answered question, shown on the review screen.
+  final List<QuestionResult> _results = [];
+
   /// The teach phase, derived from the lesson's own content (see
   /// lib/services/lesson_intro.dart). Lessons flagged skipIntro (unit
   /// quizzes) never show it.
@@ -57,13 +62,19 @@ class _LessonScreenState extends State<LessonScreen> {
     _showIntro = _intro != null;
   }
 
-  void _onQuestionDone(int xpEarned, int newCombo, bool hadMistake) {
+  void _onQuestionDone(
+    int xpEarned,
+    int newCombo,
+    bool hadMistake,
+    QuestionResult result,
+  ) {
     setState(() {
       _earnedXp += xpEarned;
       _comboCount = newCombo;
       if (hadMistake) {
         _hadMistake = true;
       }
+      _results.add(result);
       _questionIndex++;
     });
   }
@@ -85,6 +96,7 @@ class _LessonScreenState extends State<LessonScreen> {
       _comboCount = 0;
       _hadMistake = false;
       _isReplay = true;
+      _results.clear();
       // Practice again is a re-test: skip the teach phase.
       _showIntro = false;
     });
@@ -116,6 +128,7 @@ class _LessonScreenState extends State<LessonScreen> {
               onFirstCompletion: () => _onLessonComplete(context),
               isReplay: _isReplay,
               isPerfect: !_hadMistake,
+              results: List.of(_results),
             )
           : _showIntro
           ? _LessonIntroView(
@@ -550,7 +563,13 @@ class _QuestionPage extends StatefulWidget {
   final int questionNumber;
   final int totalQuestions;
   final bool isReplay;
-  final void Function(int xpEarned, int newCombo, bool hadMistake) onDone;
+  final void Function(
+    int xpEarned,
+    int newCombo,
+    bool hadMistake,
+    QuestionResult result,
+  )
+  onDone;
   final int initialCombo;
 
   @override
@@ -706,7 +725,52 @@ class _QuestionPageState extends State<_QuestionPage>
   }
 
   void _continue() {
-    widget.onDone(_computeXp(), _currentCombo, _hadMistake);
+    widget.onDone(_computeXp(), _currentCombo, _hadMistake, _buildResult());
+  }
+
+  /// Summarises this question for the end-of-lesson review screen.
+  QuestionResult _buildResult() {
+    final q = widget.question;
+    final correct =
+        _answerState == _AnswerState.correct ||
+        _answerState == _AnswerState.correctToneNote;
+    switch (q.type) {
+      case QuestionType.mcqIgboToEnglish:
+      case QuestionType.mcqEnglishToIgbo:
+        return QuestionResult(
+          prompt: q.prompt,
+          userAnswer: _selectedOption ?? '',
+          correctAnswer: q.answer ?? q.acceptedAnswers.firstOrNull ?? '',
+          isCorrect: correct,
+        );
+      case QuestionType.fillBlank:
+        return QuestionResult(
+          prompt: q.prompt,
+          userAnswer: _filledSlots.join(' '),
+          correctAnswer: q.answer ?? q.acceptedAnswers.firstOrNull ?? '',
+          isCorrect: correct,
+        );
+      case QuestionType.translate:
+        return QuestionResult(
+          prompt: q.prompt,
+          userAnswer: _translateController.text.trim(),
+          correctAnswer: q.answer ?? q.acceptedAnswers.firstOrNull ?? '',
+          isCorrect: correct,
+        );
+      case QuestionType.matchPairs:
+        final matched = _pairAttempts.where((p) => p.matched).length;
+        final total = _pairAttempts.length;
+        return QuestionResult(
+          prompt: q.prompt,
+          userAnswer: matched == total
+              ? 'All pairs matched'
+              : '$matched of $total pairs matched',
+          correctAnswer: q.pairs
+              .map((p) => '${p.left} = ${p.right}')
+              .join(', '),
+          isCorrect: correct,
+        );
+    }
   }
 
   // matchPairs pair tap handler
@@ -1779,6 +1843,7 @@ class _CompletionScreen extends StatefulWidget {
     required this.onPracticeAgain,
     required this.onFirstCompletion,
     required this.isReplay,
+    required this.results,
     this.isPerfect = true,
   });
 
@@ -1790,12 +1855,22 @@ class _CompletionScreen extends StatefulWidget {
   final bool isReplay;
   final bool isPerfect;
 
+  /// One record per answered question, shown on the review screen.
+  final List<QuestionResult> results;
+
   @override
   State<_CompletionScreen> createState() => _CompletionScreenState();
 }
 
 class _CompletionScreenState extends State<_CompletionScreen> {
   bool _completionReported = false;
+
+  /// The roster character reacting to this run, picked once so the comment
+  /// and its streaming text stay stable across rebuilds.
+  late final CoachComment _comment = pickCoachComment(
+    correct: widget.results.where((r) => r.isCorrect).length,
+    total: widget.results.length,
+  );
 
   @override
   void initState() {
@@ -1976,6 +2051,12 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: Spacing.m),
+
+                  // Coach comment: a random roster character reacts to the
+                  // run, streaming the line from a speech bubble.
+                  CoachCommentView(comment: _comment),
 
                   const SizedBox(height: Spacing.s),
 
@@ -2169,6 +2250,21 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                     color: AppColors.primary,
                     onTap: widget.onPracticeAgain,
                   ),
+                  const SizedBox(height: Spacing.s),
+
+                  // Review answers button
+                  FlatButton(
+                    key: const Key('reviewButton'),
+                    label: 'Review answers',
+                    icon: Icons.fact_check,
+                    enabled: true,
+                    color: AppColors.primary,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => _ReviewScreen(results: widget.results),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -2184,8 +2280,8 @@ class _CompletionScreenState extends State<_CompletionScreen> {
 }
 
 /// One-shot celebration burst for the completion screen. Unlike the looping
-/// streak confetti, this plays once and settles so widget tests using
-/// pumpAndSettle still terminate.
+/// streak confetti, this plays once, fades and falls away, and settles so
+/// widget tests using pumpAndSettle still terminate.
 class _CompletionBurst extends StatefulWidget {
   const _CompletionBurst();
 
@@ -2243,11 +2339,15 @@ class _BurstPainter extends CustomPainter {
       final angle = (i / 24) * 6.2832 + (i.isEven ? 0.2 : -0.2);
       final distance = progress * (80 + (i % 5) * 32);
       final center = Offset(size.width / 2, size.height * 0.3);
+      // Fade out over the final stretch and drift down, so the pieces
+      // leave the screen instead of hanging frozen in the air.
+      final fade = ((1 - progress) / 0.35).clamp(0.0, 1.0);
+      final fall = progress * progress * 48;
       final pos =
           center +
-          Offset(math.cos(angle) * distance, math.sin(angle) * distance);
+          Offset(math.cos(angle) * distance, math.sin(angle) * distance + fall);
       final paint = Paint()
-        ..color = palette[i % palette.length]
+        ..color = palette[i % palette.length].withValues(alpha: fade)
         ..style = PaintingStyle.fill;
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
@@ -2279,4 +2379,148 @@ class IntTween extends Tween<int> {
 
   @override
   int lerp(double t) => (begin! + (end! - begin!) * t).round();
+}
+
+// ---------------------------------------------------------------------------
+// Review screen: what the learner got right and wrong this run
+// ---------------------------------------------------------------------------
+
+class _ReviewScreen extends StatelessWidget {
+  const _ReviewScreen({required this.results});
+
+  final List<QuestionResult> results;
+
+  @override
+  Widget build(BuildContext context) {
+    final correct = results.where((r) => r.isCorrect).length;
+    return Scaffold(
+      key: const Key('reviewScreen'),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: const Text(
+          'Review answers',
+          style: TextStyle(
+            fontSize: TypeScale.title,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontFamily: 'NotoSans',
+          ),
+        ),
+      ),
+      body: ContentBox(
+        child: results.isEmpty
+            ? const Center(
+                child: Text(
+                  'Nothing to review yet.',
+                  style: TextStyle(
+                    fontSize: TypeScale.body,
+                    color: AppColors.textSecondary,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.symmetric(vertical: Spacing.md),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$correct of ${results.length} correct',
+                          style: const TextStyle(
+                            fontSize: TypeScale.title,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontFamily: 'NotoSans',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: Spacing.m),
+                      PropSpot(
+                        key: const Key('reviewProp'),
+                        name: PropArt
+                            .names[math.Random().nextInt(PropArt.names.length)],
+                        size: AvatarSizes.chat,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Spacing.md),
+                  for (var i = 0; i < results.length; i++)
+                    _ReviewRow(key: Key('reviewRow_$i'), result: results[i]),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _ReviewRow extends StatelessWidget {
+  const _ReviewRow({super.key, required this.result});
+
+  final QuestionResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: Spacing.s),
+      padding: const EdgeInsets.all(Spacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(Radii.card),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            result.isCorrect ? Icons.check : Icons.close,
+            size: IconSizes.md,
+            color: result.isCorrect ? AppColors.secondary : AppColors.error,
+          ),
+          const SizedBox(width: Spacing.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.prompt,
+                  style: const TextStyle(
+                    fontSize: TypeScale.body,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  'You: ${result.userAnswer}',
+                  style: const TextStyle(
+                    fontSize: TypeScale.bodySmall,
+                    color: AppColors.textSecondary,
+                    fontFamily: 'NotoSans',
+                  ),
+                ),
+                if (!result.isCorrect) ...[
+                  const SizedBox(height: Spacing.xs),
+                  Text(
+                    'Right: ${result.correctAnswer}',
+                    style: const TextStyle(
+                      fontSize: TypeScale.bodySmall,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.secondary,
+                      fontFamily: 'NotoSans',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
