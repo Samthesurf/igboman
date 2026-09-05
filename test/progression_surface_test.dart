@@ -123,12 +123,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // Completion screen rich surfaces
-        expect(find.byKey(const Key('runCompleteBanner')), findsOneWidget);
+        expect(find.byKey(const Key('runCompleteBanner')), findsNothing);
         expect(find.byKey(const Key('runStatsCard')), findsOneWidget);
         expect(find.byKey(const Key('milestoneProgressBar')), findsOneWidget);
-        expect(find.text('Run Conquered!'), findsOneWidget);
-        expect(find.textContaining('Perfect Run'), findsOneWidget);
-        expect(find.textContaining('4 Day Streak'), findsOneWidget);
+        expect(find.text('Run Conquered!'), findsNothing);
+        expect(find.text('Perfect'), findsOneWidget);
+        expect(find.text('4'), findsOneWidget);
+        expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
       },
     );
   });

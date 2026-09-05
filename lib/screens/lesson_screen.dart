@@ -583,7 +583,6 @@ class _QuestionPageState extends State<_QuestionPage>
   _AnswerState _answerState = _AnswerState.idle;
   late AnimationController _animController;
   late Animation<double> _shakeAnim;
-  late Animation<double> _scaleAnim;
 
   // Per-type state
   String? _selectedOption; // MCQ
@@ -606,10 +605,6 @@ class _QuestionPageState extends State<_QuestionPage>
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 8.0), weight: 25),
       TweenSequenceItem(tween: Tween(begin: 8.0, end: -8.0), weight: 50),
       TweenSequenceItem(tween: Tween(begin: -8.0, end: 0.0), weight: 25),
-    ]).animate(_animController);
-    _scaleAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.08), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.08, end: 1.0), weight: 50),
     ]).animate(_animController);
 
     // Rebuild when translate text changes so _canConfirm updates
@@ -846,18 +841,11 @@ class _QuestionPageState extends State<_QuestionPage>
     return AnimatedBuilder(
       animation: _animController,
       builder: (context, child) {
-        double offsetX = 0;
-        double scale = 1.0;
-        if (_answerState == _AnswerState.wrong) {
-          offsetX = _shakeAnim.value;
-        } else if (isCorrect) {
-          scale = _scaleAnim.value;
-        }
+        final offsetX = _answerState == _AnswerState.wrong
+            ? _shakeAnim.value
+            : 0.0;
 
-        return Transform.translate(
-          offset: Offset(offsetX, 0),
-          child: Transform.scale(scale: scale, child: child),
-        );
+        return Transform.translate(offset: Offset(offsetX, 0), child: child);
       },
       child: _buildBody(isCorrect),
     );
@@ -1914,93 +1902,6 @@ class _CompletionScreenState extends State<_CompletionScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Run Complete Banner
-                  Container(
-                    key: const Key('runCompleteBanner'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.m,
-                      vertical: Spacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [AppColors.successBg, AppColors.warnBg],
-                      ),
-                      borderRadius: BorderRadius.circular(Radii.chip),
-                      border: Border.all(color: AppColors.secondary),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x22000000),
-                          blurRadius: 8,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.emoji_events,
-                          size: IconSizes.s,
-                          color: AppColors.secondary,
-                        ),
-                        SizedBox(width: Spacing.xs),
-                        Text(
-                          'Run Conquered!',
-                          style: TextStyle(
-                            fontSize: TypeScale.caption,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.secondary,
-                            fontFamily: 'NotoSans',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: Spacing.s),
-
-                  if (widget.isPerfect && !widget.isReplay)
-                    Container(
-                      key: const Key('perfectRunBanner'),
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Spacing.md,
-                        vertical: Spacing.s,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [AppColors.warnBg, AppColors.successBg],
-                        ),
-                        borderRadius: BorderRadius.circular(Radii.card),
-                        border: Border.all(color: AppColors.primary),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.emoji_events,
-                            size: IconSizes.s,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: Spacing.xs),
-                          Text(
-                            'Flawless trail run, zero faults!',
-                            style: TextStyle(
-                              fontSize: TypeScale.caption,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                              fontFamily: 'NotoSans',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (widget.isPerfect && !widget.isReplay)
-                    const SizedBox(height: Spacing.s),
-
                   // Ada avatar + Excellent! header row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -2096,77 +1997,108 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                         border: Border.all(color: AppColors.cardBorder),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Column(
-                            children: [
-                              const Text(
-                                'XP Earned',
-                                style: TextStyle(
-                                  fontSize: TypeScale.caption,
-                                  color: AppColors.textSecondary,
-                                  fontFamily: 'NotoSans',
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'XP Earned',
+                                  style: TextStyle(
+                                    fontSize: TypeScale.caption,
+                                    color: AppColors.textSecondary,
+                                    fontFamily: 'NotoSans',
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: Spacing.xs),
-                              Text(
-                                '+${widget.earnedXp} XP',
-                                style: const TextStyle(
-                                  fontSize: TypeScale.body,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.secondary,
-                                  fontFamily: 'NotoSans',
+                                const SizedBox(height: Spacing.xs),
+                                Text(
+                                  '+${widget.earnedXp} XP',
+                                  style: const TextStyle(
+                                    fontSize: TypeScale.body,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.secondary,
+                                    fontFamily: 'NotoSans',
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          Column(
-                            children: [
-                              const Text(
-                                'Accuracy',
-                                style: TextStyle(
-                                  fontSize: TypeScale.caption,
-                                  color: AppColors.textSecondary,
-                                  fontFamily: 'NotoSans',
+                          Expanded(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(color: AppColors.cardBorder),
                                 ),
                               ),
-                              const SizedBox(height: Spacing.xs),
-                              Text(
-                                widget.isReplay
-                                    ? 'Practice Run'
-                                    : (widget.isPerfect
-                                          ? 'Perfect Run'
-                                          : 'Completed'),
-                                style: const TextStyle(
-                                  fontSize: TypeScale.body,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                  fontFamily: 'NotoSans',
-                                ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Accuracy',
+                                    style: TextStyle(
+                                      fontSize: TypeScale.caption,
+                                      color: AppColors.textSecondary,
+                                      fontFamily: 'NotoSans',
+                                    ),
+                                  ),
+                                  const SizedBox(height: Spacing.xs),
+                                  Text(
+                                    widget.isReplay
+                                        ? 'Practice Run'
+                                        : (widget.isPerfect
+                                              ? 'Perfect'
+                                              : 'Completed'),
+                                    style: const TextStyle(
+                                      fontSize: TypeScale.body,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                      fontFamily: 'NotoSans',
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                          Column(
-                            children: [
-                              const Text(
-                                'Streak',
-                                style: TextStyle(
-                                  fontSize: TypeScale.caption,
-                                  color: AppColors.textSecondary,
-                                  fontFamily: 'NotoSans',
+                          Expanded(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(color: AppColors.cardBorder),
                                 ),
                               ),
-                              const SizedBox(height: Spacing.xs),
-                              Text(
-                                '$streakDays Day Streak',
-                                style: const TextStyle(
-                                  fontSize: TypeScale.body,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                  fontFamily: 'NotoSans',
-                                ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Streak',
+                                    style: TextStyle(
+                                      fontSize: TypeScale.caption,
+                                      color: AppColors.textSecondary,
+                                      fontFamily: 'NotoSans',
+                                    ),
+                                  ),
+                                  const SizedBox(height: Spacing.xs),
+                                  Row(
+                                    key: const Key('streakStatValue'),
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '$streakDays',
+                                        style: const TextStyle(
+                                          fontSize: TypeScale.body,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                          fontFamily: 'NotoSans',
+                                        ),
+                                      ),
+                                      const SizedBox(width: Spacing.xs),
+                                      const Icon(
+                                        Icons.local_fire_department,
+                                        size: IconSizes.s,
+                                        color: AppColors.ember,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),

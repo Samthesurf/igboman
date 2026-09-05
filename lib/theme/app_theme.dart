@@ -22,6 +22,7 @@ abstract final class AppColors {
   static const Color error = Color(
     0xFFC75B39,
   ); // flat terracotta for wrong answers
+  static const Color ember = Color(0xFFE2711D); // flame orange, streak fire
   static const Color successBg = Color(0xFFEAF3EE); // light green tint
   static const Color warnBg = Color(0xFFF6EDE3); // light brown tint
   static const Color disabledFill = Color(0xFFE8DFD5);

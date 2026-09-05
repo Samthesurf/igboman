@@ -189,9 +189,7 @@ void main() {
       expect(find.textContaining('Heat x1'), findsOneWidget);
     });
 
-    testWidgets('completion fires confetti and flawless banner', (
-      tester,
-    ) async {
+    testWidgets('completion fires confetti with divided stats', (tester) async {
       await tester.pumpWidget(_wrap(const LessonScreen(lesson: _runLesson)));
       await tester.pumpAndSettle();
 
@@ -202,11 +200,12 @@ void main() {
       await tester.tap(find.text('Continue'));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('runCompleteBanner')), findsOneWidget);
-      expect(find.byKey(const Key('perfectRunBanner')), findsOneWidget);
+      expect(find.byKey(const Key('runCompleteBanner')), findsNothing);
+      expect(find.byKey(const Key('perfectRunBanner')), findsNothing);
       expect(find.byKey(const Key('completionConfetti')), findsOneWidget);
       expect(find.byKey(const Key('runStatsCard')), findsOneWidget);
       expect(find.byKey(const Key('milestoneProgressBar')), findsOneWidget);
+      expect(find.byKey(const Key('streakStatValue')), findsOneWidget);
     });
   });
 
