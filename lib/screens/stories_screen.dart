@@ -6,6 +6,7 @@ import '../models/story.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
+import '../widgets/avatar_view.dart';
 import '../widgets/content_box.dart';
 import '../widgets/story_card.dart';
 import 'story_screen.dart';
@@ -79,6 +80,9 @@ class StoriesList extends StatelessWidget {
               fontFamily: 'NotoSans',
             ),
           ),
+          const SizedBox(height: Spacing.m),
+          const _FamilyStrip(),
+          const SizedBox(height: Spacing.m),
           const SizedBox(height: Spacing.lg),
           Expanded(
             child: ListView(
@@ -102,6 +106,27 @@ class StoriesList extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The story cast: Ada, the kid, Nna, Mama and Mbe in one strip above
+/// the story list.
+class _FamilyStrip extends StatelessWidget {
+  const _FamilyStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      key: Key('familyStrip'),
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        AvatarView(assetPath: 'assets/images/ada.jpg', initial: 'A'),
+        AvatarView(assetPath: 'assets/images/kid.jpg', initial: 'O'),
+        AvatarView(assetPath: 'assets/images/nna.jpg', initial: 'N'),
+        AvatarView(assetPath: 'assets/images/mama.jpg', initial: 'M'),
+        AvatarView(assetPath: 'assets/images/mbe.jpg', initial: 'M'),
+      ],
     );
   }
 }

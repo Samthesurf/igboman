@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../models/story.dart';
 import '../theme/app_theme.dart';
 import '../theme/dimens.dart';
+import 'prop_spot.dart';
 
-/// Flat story card: book icon, English title, unit badge, and a lock state
-/// driven by the parent (AppState.unitIsUnlocked passed in as [unlocked]).
+/// Flat story card: prop illustration, English title, unit badge, and a
+/// lock state driven by the parent (AppState.unitIsUnlocked passed in as
+/// [unlocked]). Each unlocked story shows the Igbo prop for its unit.
 class StoryCard extends StatelessWidget {
   const StoryCard({
     super.key,
@@ -20,7 +22,9 @@ class StoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = unlocked ? AppColors.textPrimary : AppColors.disabledText;
+    final titleColor = unlocked
+        ? AppColors.textPrimary
+        : AppColors.disabledText;
 
     return GestureDetector(
       onTap: onTap,
@@ -34,22 +38,26 @@ class StoryCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: AvatarSizes.card,
-              height: AvatarSizes.card,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: unlocked
-                    ? AppColors.successBg
-                    : AppColors.disabledFill,
-                borderRadius: BorderRadius.circular(Radii.chip),
+            if (unlocked)
+              PropSpot(
+                key: Key('storyProp_${story.unitId}'),
+                name: PropArt.names[story.unitId % PropArt.names.length],
+              )
+            else
+              Container(
+                width: AvatarSizes.card,
+                height: AvatarSizes.card,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.disabledFill,
+                  borderRadius: BorderRadius.circular(Radii.chip),
+                ),
+                child: const Icon(
+                  Icons.lock,
+                  color: AppColors.disabledText,
+                  size: IconSizes.lg,
+                ),
               ),
-              child: Icon(
-                unlocked ? Icons.menu_book : Icons.lock,
-                color: unlocked ? AppColors.secondary : AppColors.disabledText,
-                size: IconSizes.lg,
-              ),
-            ),
             const SizedBox(width: Spacing.md),
             Expanded(
               child: Column(

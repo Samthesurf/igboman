@@ -302,7 +302,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const AvatarView(
-            assetPath: 'assets/images/ada.png',
+            assetPath: 'assets/images/ada.jpg',
             initial: 'A',
             size: AvatarSizes.chat,
             borderRadius: Radii.button,
@@ -395,7 +395,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(height: Spacing.s),
           const AvatarView(
-            assetPath: 'assets/images/ada.png',
+            assetPath: 'assets/images/ada.jpg',
             initial: 'A',
             size: AvatarSizes.chat,
             borderRadius: Radii.button,
@@ -411,7 +411,7 @@ class _ChatScreenState extends State<ChatScreen> {
           _buildErrorBubble(),
           const SizedBox(height: Spacing.s),
           const AvatarView(
-            assetPath: 'assets/images/ada.png',
+            assetPath: 'assets/images/ada.jpg',
             initial: 'A',
             size: AvatarSizes.chat,
             borderRadius: Radii.button,
