@@ -111,6 +111,7 @@ class _LessonScreenState extends State<LessonScreen> {
       backgroundColor: AppColors.background,
       appBar: _LessonAppBar(
         title: widget.lesson.title,
+        showBackButton: !isComplete,
         questionNumber: isComplete ? questions.length : (_questionIndex + 1),
         totalQuestions: questions.length,
         progress: isComplete
@@ -366,12 +367,17 @@ class _LessonAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.progress,
     this.questionNumber,
     this.totalQuestions,
+    this.showBackButton = true,
   });
 
   final String title;
   final double progress;
   final int? questionNumber;
   final int? totalQuestions;
+
+  /// False on the completion screen: the run is over and the user
+  /// navigates via the practice/review actions instead of backing out.
+  final bool showBackButton;
 
   @override
   Size get preferredSize => const Size.fromHeight(
@@ -388,11 +394,14 @@ class _LessonAppBar extends StatelessWidget implements PreferredSizeWidget {
             height: kToolbarHeight,
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  color: AppColors.textPrimary,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
+                if (showBackButton)
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    color: AppColors.textPrimary,
+                    onPressed: () => Navigator.of(context).pop(),
+                  )
+                else
+                  const SizedBox(width: Spacing.md),
                 Expanded(
                   child: Text(
                     title,
@@ -2090,7 +2099,7 @@ class _CompletionScreenState extends State<_CompletionScreen> {
                                             const SizedBox(width: Spacing.xs),
                                             const Icon(
                                               Icons.local_fire_department,
-                                              size: IconSizes.s,
+                                              size: IconSizes.md,
                                               color: AppColors.ember,
                                             ),
                                           ],
